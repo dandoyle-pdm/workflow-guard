@@ -186,6 +186,35 @@ Highlight the most important discoveries that next Claude MUST understand:
 - What mistakes to avoid (learned from investigation)
 - Critical relationships between components
 
+## Work Methodology for Next Session
+
+### Ultrathink (Sequential Thinking)
+Use `mcp__sequential-thinking__sequentialthinking` for:
+- Formulating research questions
+- Hypothesis generation and testing
+- Synthesizing findings into understanding
+- Building mental models of complex systems
+
+### Quality Chains for Investigation
+**R4** (read-only queries): No chain needed - fast path for pure research
+
+If investigation leads to implementation:
+- **R1** for code changes: code-developer → code-reviewer → code-tester
+- **R2** for documentation: tech-writer → tech-editor → tech-publisher
+
+### Agent Delegation
+Keep main thread lean - delegate exploration:
+- `Explore` agent: Codebase searches, pattern discovery
+- `general-purpose` agent: Deep-dive into specific areas
+- `Plan` agent: Architecture analysis
+
+### Investigation Pattern
+1. **Question** - Define what we're trying to understand
+2. **Explore** - Spawn Explore agents to gather evidence
+3. **Synthesize** - Use ultrathink to build mental model
+4. **Document** - Capture findings for handoff
+5. **Action** - If changes needed, select appropriate quality chain
+
 ## Present Handoff
 
 Show the complete handoff in a code block, explain what I discovered about the system, and ask if the user wants to save it to `handoff-investigate-YYYYMMDD-HHMM.md` or use as-is.
