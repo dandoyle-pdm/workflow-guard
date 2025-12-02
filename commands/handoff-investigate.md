@@ -186,6 +186,41 @@ Highlight the most important discoveries that next Claude MUST understand:
 - What mistakes to avoid (learned from investigation)
 - Critical relationships between components
 
+## Work Methodology for Next Session
+
+### Ultrathink (Sequential Thinking)
+Use `mcp__sequential-thinking__sequentialthinking` for:
+- Forming research questions and investigation strategy
+- Reasoning through evidence to form hypotheses
+- Understanding complex code relationships
+- Synthesizing findings into coherent mental model
+
+### Quality Chains
+Select chain based on work type:
+| Chain | Work Type | Flow |
+|-------|-----------|------|
+| **R1** | Production code | code-developer -> code-reviewer -> code-tester |
+| **R2** | Documentation (100+ lines) | tech-writer -> tech-editor -> tech-publisher |
+| **R3** | Handoff prompts | tech-editor (quick check) |
+| **R4** | Read-only queries | None (fast path) |
+| **R5** | Config/minor changes | Single reviewer |
+| **Plugin** | Plugin resources | plugin-engineer -> plugin-reviewer -> plugin-tester |
+
+**Investigation Focus**: R4 is your primary chain - pure research has no code changes. If investigation leads to implementation needs, spawn R1 ticket. If findings need documentation, spawn R2 ticket.
+
+### Agent Delegation
+Keep main thread lean - delegate exploration:
+- Use `Task` tool with `subagent_type: Explore` for deep code exploration
+- Use `subagent_type: tech-writer` to document findings (R2)
+- Main thread synthesizes findings and forms conclusions
+- Agents do the digging; main thread connects the dots
+
+### Ticket Workflow
+For investigation work:
+1. Investigation itself may not need a ticket (R4 fast path)
+2. Create tickets for resulting work (R1 for fixes, R2 for docs)
+3. Document findings in handoff even if no ticket
+
 ## Present Handoff
 
 Show the complete handoff in a code block, explain what I discovered about the system, and ask if the user wants to save it to `handoff-investigate-YYYYMMDD-HHMM.md` or use as-is.

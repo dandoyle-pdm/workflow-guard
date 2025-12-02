@@ -144,6 +144,41 @@ Highlight the most important insights I've gained that next Claude MUST understa
 - What patterns must be maintained for consistency
 - Important context from user discussions or requirements
 
+## Work Methodology for Next Session
+
+### Ultrathink (Sequential Thinking)
+Use `mcp__sequential-thinking__sequentialthinking` for:
+- Architectural decisions with multiple valid approaches
+- Breaking down feature implementation into components
+- Reasoning through design trade-offs
+- Planning test strategy for new functionality
+
+### Quality Chains
+Select chain based on work type:
+| Chain | Work Type | Flow |
+|-------|-----------|------|
+| **R1** | Production code | code-developer -> code-reviewer -> code-tester |
+| **R2** | Documentation (100+ lines) | tech-writer -> tech-editor -> tech-publisher |
+| **R3** | Handoff prompts | tech-editor (quick check) |
+| **R4** | Read-only queries | None (fast path) |
+| **R5** | Config/minor changes | Single reviewer |
+| **Plugin** | Plugin resources | plugin-engineer -> plugin-reviewer -> plugin-tester |
+
+**Development Focus**: R1 is your primary chain. Use code-developer for implementation, code-reviewer for design validation, code-tester for verification.
+
+### Agent Delegation
+Keep main thread lean - delegate heavy lifting:
+- Use `Task` tool with `subagent_type: code-developer` for feature implementation
+- Use `subagent_type: code-reviewer` for architecture validation
+- Use `subagent_type: code-tester` for test creation and verification
+- Main thread coordinates; agents execute
+
+### Ticket Workflow
+For tracked work:
+1. Create ticket in `tickets/queue/`
+2. Work moves to `tickets/active/{branch}/`
+3. Complete to `tickets/completed/{branch}/` before PR
+
 ## Present Handoff
 
 Show the complete handoff in a code block, explain what I detected about the session, and ask if the user wants to save it to `handoff-development-YYYYMMDD-HHMM.md` or use as-is.

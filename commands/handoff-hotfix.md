@@ -147,6 +147,41 @@ Highlight critical information next Claude MUST know:
 - What to watch for (early warning signs of fix failing)
 - What NOT to do (approaches that will make it worse)
 
+## Work Methodology for Next Session
+
+### Ultrathink (Sequential Thinking)
+Use `mcp__sequential-thinking__sequentialthinking` for:
+- Rapid triage - what's broken, what's the blast radius
+- Risk assessment of quick fix vs proper fix
+- Deciding minimum viable fix to restore service
+- Planning verification steps that won't waste time
+
+### Quality Chains
+Select chain based on work type:
+| Chain | Work Type | Flow |
+|-------|-----------|------|
+| **R1** | Production code | code-developer -> code-reviewer -> code-tester |
+| **R2** | Documentation (100+ lines) | tech-writer -> tech-editor -> tech-publisher |
+| **R3** | Handoff prompts | tech-editor (quick check) |
+| **R4** | Read-only queries | None (fast path) |
+| **R5** | Config/minor changes | Single reviewer |
+| **Plugin** | Plugin resources | plugin-engineer -> plugin-reviewer -> plugin-tester |
+
+**Hotfix Focus**: R5 for config-only fixes (fastest). Minimal R1 (skip extensive review) for code changes when time is critical. Document shortcuts taken for post-mortem.
+
+### Agent Delegation
+Emergency pattern - speed over process:
+- Direct implementation is acceptable for true emergencies
+- If delegating, use `subagent_type: code-developer` with clear urgency context
+- Skip extensive review cycles - verify fix works, deploy, monitor
+- Main thread can implement directly when every minute counts
+
+### Ticket Workflow
+Simplified for emergencies:
+1. Fix first, ticket later (document what was done)
+2. Create ticket post-fix for tracking and follow-up
+3. Proper fix ticket if quick fix was temporary
+
 ## Present Handoff
 
 Show the complete handoff in a code block with **EMERGENCY HOTFIX** clearly marked at top.

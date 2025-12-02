@@ -66,6 +66,39 @@ Using the appropriate template from SESSION_CONTINUATION_FORMAT.md:
    - Highlight key insights that next Claude must understand
    - Ask if user wants to save to file or use as-is
 
+## Work Methodology for Next Session
+
+### Ultrathink (Sequential Thinking)
+Use `mcp__sequential-thinking__sequentialthinking` for:
+- Complex planning when the path forward is unclear
+- Breaking down multi-step implementations
+- Reasoning through quality chain selection
+- Analyzing trade-offs between approaches
+
+### Quality Chains
+Select chain based on work type:
+| Chain | Work Type | Flow |
+|-------|-----------|------|
+| **R1** | Production code | code-developer -> code-reviewer -> code-tester |
+| **R2** | Documentation (100+ lines) | tech-writer -> tech-editor -> tech-publisher |
+| **R3** | Handoff prompts | tech-editor (quick check) |
+| **R4** | Read-only queries | None (fast path) |
+| **R5** | Config/minor changes | Single reviewer |
+| **Plugin** | Plugin resources | plugin-engineer -> plugin-reviewer -> plugin-tester |
+
+### Agent Delegation
+Keep main thread lean - delegate heavy lifting:
+- Use `Task` tool with appropriate `subagent_type`
+- Match agent to work type (code-developer for features, code-tester for bugs, tech-writer for docs)
+- Main thread coordinates; agents execute
+- Never implement directly in main thread for tracked work
+
+### Ticket Workflow
+For tracked work:
+1. Create ticket in `tickets/queue/`
+2. Work moves to `tickets/active/{branch}/`
+3. Complete to `tickets/completed/{branch}/` before PR
+
 ## Key Principle
 
 The generated handoff should allow next Claude to continue thinking and working exactly as I would - with the same understanding, insights, and mental model. Not just "here's what happened" but "here's what I know and understand."
