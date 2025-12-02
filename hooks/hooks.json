@@ -5,17 +5,17 @@
       "hooks": [
         {
           "type": "command",
-          "command": "${CLAUDE_PLUGIN_ROOT}/hooks/block-main-commits.sh",
+          "command": "./hooks/block-main-commits.sh",
           "timeout": 10
         },
         {
           "type": "command",
-          "command": "${CLAUDE_PLUGIN_ROOT}/hooks/enforce-pr-workflow.sh",
+          "command": "./hooks/enforce-pr-workflow.sh",
           "timeout": 10
         },
         {
           "type": "command",
-          "command": "${CLAUDE_PLUGIN_ROOT}/hooks/enforce-ticket-completion.sh",
+          "command": "./hooks/enforce-ticket-completion.sh",
           "timeout": 10
         }
       ]

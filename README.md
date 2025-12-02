@@ -1,117 +1,127 @@
-# Workflow Guard Plugin
+# Workflow Guard
 
-Workflow Guard plugin for Claude Code - provides git branch protection, PR workflow enforcement, ticket completion gates, and session handoff commands.
+A Claude Code plugin that provides git branch protection, PR workflow enforcement, and session handoff commands for maintaining consistent development workflows.
 
-## Overview
+## Features
 
-This plugin provides:
-
-- **5 Handoff Commands**: Auto-generate session continuation prompts
-- **Branch Protection Hooks**: Block direct commits to protected branches
-- **PR Workflow Enforcement**: Route users to proper PR-based workflows
-- **Ticket Completion Gates**: Ensure tickets are completed before PR creation
+- **Branch Protection**: Prevents accidental commits to protected branches (main, master, production)
+- **PR Workflow Enforcement**: Blocks direct merges to protected branches, routing to proper PR workflow
+- **Ticket Completion Verification**: Ensures tickets are marked complete before PR creation
+- **Session Handoff Commands**: Generate comprehensive handoff prompts for seamless session continuation
 
 ## Installation
 
-1. Copy this plugin directory to `~/.claude/plugins/workflow-guard/`
-2. Enable the plugin in Claude Code settings
-3. Manually copy hook scripts (see Manual Steps below)
+```bash
+# Add local marketplace
+/plugin marketplace add ~/.claude/plugins
 
-## Components
+# Install plugin
+/plugin install workflow-guard@local-plugins
+```
+
+## What's Included
 
 ### Commands
 
-Located in `./commands/`:
+The plugin provides five handoff commands that auto-generate session continuation prompts:
 
-| Command | Purpose |
-|---------|---------|
-| `/handoff` | Auto-detect session type and generate handoff prompt |
-| `/handoff-debug` | Generate debugging session handoff |
-| `/handoff-development` | Generate development session handoff |
-| `/handoff-hotfix` | Generate emergency hotfix handoff |
-| `/handoff-investigate` | Generate investigation/research handoff |
+| Command | Description |
+|---------|-------------|
+| `/handoff` | Auto-detect session type and generate appropriate handoff prompt |
+| `/handoff-debug` | Generate handoff for debugging sessions with root cause analysis and fix status |
+| `/handoff-development` | Generate handoff for feature development with design decisions and progress tracking |
+| `/handoff-hotfix` | Generate emergency hotfix handoff with impact assessment and quick fix status |
+| `/handoff-investigate` | Generate investigation handoff with research findings and evidence collected |
+
+Each handoff command automatically:
+- Gathers system state (git status, containers, working directory)
+- Extracts tool usage patterns from the session
+- Captures mental model and insights
+- Generates structured prompt for next Claude session
 
 ### Hooks
 
-Located in `./hooks/`:
+Three PreToolUse hooks intercept Bash commands to enforce workflow discipline:
 
-- `hooks.json` - Hook configuration
-- `block-main-commits.sh` - Blocks git commit on protected branches (main, master, production)
-- `enforce-pr-workflow.sh` - Blocks direct merges to protected branches
-- `enforce-ticket-completion.sh` - Blocks PR creation if ticket not in completed/
+#### block-main-commits
 
-## Hook Behaviors
+Blocks `git commit` commands when on protected branches (main, master, production).
 
-### block-main-commits.sh
+**Behavior:**
+- Detects any `git commit` variant (with flags, paths, etc.)
+- Checks current branch against protected list
+- Blocks with helpful error message showing correct worktree workflow
+- Logs blocked attempts for audit
 
-Intercepts `git commit` commands and blocks when:
-- Current branch is protected (main, master, production)
-- Configurable via `CLAUDE_PROTECTED_BRANCHES` environment variable
+#### enforce-pr-workflow
 
-Provides guidance to use worktree workflow instead.
+Blocks direct `git merge` of feature branches into protected branches.
 
-### enforce-pr-workflow.sh
+**Behavior:**
+- Detects merge commands targeting protected branches
+- Allows merging protected branches INTO feature branches (for updates)
+- Blocks merging feature branches INTO protected branches
+- Provides exact commands for correct PR-based workflow
 
-Intercepts `git merge` commands and blocks when:
-- On a protected branch
-- Attempting to merge a feature branch directly
-
-Allows merging main INTO feature branches (the correct pattern).
-
-### enforce-ticket-completion.sh
-
-Intercepts `gh pr create` commands and blocks when:
-- In a worktree (not main repo)
-- Ticket for the branch is still in `tickets/active/`
-
-Requires ticket to be in `tickets/completed/` before PR creation.
-
-## Handoff Commands
-
-Each handoff command:
-
-1. Analyzes the current session
-2. Extracts context from tool usage (Read, Edit, Bash, etc.)
-3. Captures mental model and understanding
-4. Generates a structured handoff prompt
-
-### Handoff Types
-
-- **DEBUG**: Bug investigation, root cause analysis, fix status
-- **DEVELOPMENT**: Feature implementation, design decisions, progress tracking
-- **HOTFIX**: Emergency response, quick fix status, service monitoring
-- **INVESTIGATE**: Research questions, findings, evidence collection
-
-## Manual Steps Required
-
-Due to hook protection, shell scripts must be copied manually:
-
+**Example blocked:**
 ```bash
-# Copy workflow-guard hook scripts
-cp ~/.claude/hooks/block-main-commits.sh ~/.claude/plugins/workflow-guard/hooks/
-cp ~/.claude/hooks/enforce-pr-workflow.sh ~/.claude/plugins/workflow-guard/hooks/
-cp ~/.claude/hooks/enforce-ticket-completion.sh ~/.claude/plugins/workflow-guard/hooks/
-
-# Make scripts executable
-chmod +x ~/.claude/plugins/workflow-guard/hooks/*.sh
+# On main branch
+git merge feature/my-feature  # BLOCKED - use PR instead
 ```
+
+**Example allowed:**
+```bash
+# On feature branch
+git merge origin/main  # ALLOWED - updating feature branch
+```
+
+#### enforce-ticket-completion
+
+Ensures ticket is in `tickets/completed/` before PR creation.
+
+**Behavior:**
+- Detects `gh pr create` commands
+- Only applies when in a git worktree (not main repo)
+- Verifies ticket exists in `tickets/completed/<branch>/`
+- Blocks if ticket is still in `tickets/active/`
+- Allows non-ticket work to proceed (no ticket found = warning only)
 
 ## Configuration
 
-The `hooks.json` file configures:
+### Protected Branches
 
-- **PreToolUse (Bash)**: Runs all three workflow guard hooks
+Default protected branches: `main`, `master`, `production`
 
-Hooks use `${CLAUDE_PLUGIN_ROOT}` to reference script paths relative to the plugin root.
+Override with environment variable:
+```bash
+export CLAUDE_PROTECTED_BRANCHES="main production staging develop"
+```
 
-### Environment Variables
+### Debug Logging
 
-- `CLAUDE_PROTECTED_BRANCHES`: Space-separated list of protected branch names (default: "main production master")
+All hooks log to `~/.claude/logs/hooks-debug.log` for troubleshooting:
+```bash
+tail -f ~/.claude/logs/hooks-debug.log
+```
 
-## Author
+## Workflow Overview
 
-Dan Doyle
+```
+1. Create worktree from main
+   git worktree add ~/workspace/worktrees/project/feature-branch -b feature-branch
 
-## Version
+2. Work in worktree (commits allowed)
+   cd ~/workspace/worktrees/project/feature-branch
+   # make changes
+   git commit -m "..."
 
-1.0.0
+3. Complete ticket before PR
+   ~/.claude/scripts/complete-ticket.sh
+
+4. Create PR (ticket completion verified)
+   gh pr create --base main
+```
+
+## License
+
+MIT
