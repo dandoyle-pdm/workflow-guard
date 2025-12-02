@@ -12,12 +12,18 @@ A Claude Code plugin that provides git branch protection, PR workflow enforcemen
 ## Installation
 
 ```bash
-# Add local marketplace
+# Add local marketplace (first time only)
 /plugin marketplace add ~/.claude/plugins
 
 # Install plugin
 /plugin install workflow-guard@local-plugins
 ```
+
+**Restart Claude Code after installation to load the plugin.**
+
+### Updating the Plugin
+
+Content changes (hooks, commands) only require a **restart** - no reinstall needed. The plugin installation registers the plugin location; contents are loaded fresh each session.
 
 ## What's Included
 
