@@ -144,41 +144,6 @@ Highlight the most important insights I've gained that next Claude MUST understa
 - What patterns must be maintained for consistency
 - Important context from user discussions or requirements
 
-## Work Methodology for Next Session
-
-Include in the generated handoff instructions for HOW to continue development:
-
-### Ultrathink (Sequential Thinking)
-Use `mcp__sequential-thinking__sequentialthinking` for:
-- Planning implementation steps before coding
-- Reasoning through design decisions
-- Breaking complex features into components
-- Any problem requiring structured thought
-
-### Quality Chains for Development
-**R1 Chain** for production code: code-developer → code-reviewer → code-tester
-
-Workflow:
-1. Create ticket from `tickets/TEMPLATE.md`
-2. Spawn `code-developer` agent via Task tool to implement
-3. `code-reviewer` audits with CRITICAL/HIGH/MEDIUM findings
-4. `code-tester` runs tests and makes routing decision
-5. Iterate until approved
-
-### Agent Delegation
-Keep main thread lean - delegate implementation:
-- `code-developer`: Implementation work
-- `code-reviewer`: Adversarial review
-- `code-tester`: Test execution and judgment
-- `Explore` agent: Codebase research
-- `Plan` agent: Architecture planning
-
-### Parallel Execution
-When tasks are independent, spawn multiple agents simultaneously:
-```
-Task(code-developer for module A) + Task(code-developer for module B)
-```
-
 ## Present Handoff
 
 Show the complete handoff in a code block, explain what I detected about the session, and ask if the user wants to save it to `handoff-development-YYYYMMDD-HHMM.md` or use as-is.

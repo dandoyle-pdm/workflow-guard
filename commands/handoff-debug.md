@@ -127,42 +127,6 @@ Highlight the most important insights I've gained that next Claude MUST understa
 - What the code is actually doing vs what it appears to do
 - Important context that isn't obvious from code alone
 
-## Work Methodology for Next Session
-
-Include in the generated handoff instructions for HOW to continue debugging:
-
-### Ultrathink (Sequential Thinking)
-Use `mcp__sequential-thinking__sequentialthinking` for:
-- Hypothesis generation and systematic testing
-- Tracing execution flow through complex code
-- Elimination debugging (binary search for root cause)
-- Any analysis requiring structured reasoning
-
-### Quality Chains for Bug Fixes
-**R1 Chain** for the fix: code-developer → code-reviewer → code-tester
-
-Debugging workflow:
-1. Use ultrathink to reason through hypotheses
-2. Use `Explore` agent for codebase investigation
-3. Once root cause identified, create ticket
-4. Spawn `code-developer` to implement fix
-5. `code-reviewer` checks fix doesn't introduce regressions
-6. `code-tester` verifies fix and runs test suite
-
-### Agent Delegation
-Keep main thread lean - delegate work:
-- `Explore` agent: Search codebase for related code
-- `code-developer`: Implement the fix
-- `code-reviewer`: Verify fix is correct and safe
-- `code-tester`: Run tests, verify fix works
-
-### Debugging Strategy
-1. **Hypothesize** - Use sequential-thinking to generate theories
-2. **Investigate** - Spawn Explore agent to gather evidence
-3. **Test** - Run targeted tests to confirm/deny
-4. **Fix** - Use R1 chain for the actual fix
-5. **Verify** - Ensure fix holds and no regressions
-
 ## Present Handoff
 
 Show the complete handoff in a code block, explain what I detected about the session, and ask if the user wants to save it to `handoff-debug-YYYYMMDD-HHMM.md` or use as-is.

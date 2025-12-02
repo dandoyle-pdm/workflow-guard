@@ -147,33 +147,6 @@ Highlight critical information next Claude MUST know:
 - What to watch for (early warning signs of fix failing)
 - What NOT to do (approaches that will make it worse)
 
-## Work Methodology for Next Session
-
-### Ultrathink (Sequential Thinking)
-Use `mcp__sequential-thinking__sequentialthinking` for:
-- Rapid triage and impact assessment
-- Quick risk analysis of proposed fixes
-- Structured reasoning under pressure
-
-### Emergency Quality Chain
-**Abbreviated R1** for hotfixes (speed over ceremony):
-1. Implement fix directly (skip ticket for true emergencies)
-2. Quick `code-reviewer` safety check
-3. `code-tester` runs critical path tests only
-4. Deploy, monitor, then create follow-up ticket
-
-### Agent Delegation
-- `Explore` agent: Quick search for affected areas
-- `code-developer`: Implement hotfix
-- `code-reviewer`: Safety check only
-
-### Emergency Protocol
-1. **Assess** - ultrathink to understand scope
-2. **Stabilize** - minimal fix to stop bleeding
-3. **Verify** - confirm services restored
-4. **Monitor** - watch for fix holding
-5. **Follow-up** - ticket for proper fix post-incident
-
 ## Present Handoff
 
 Show the complete handoff in a code block with **EMERGENCY HOTFIX** clearly marked at top.
