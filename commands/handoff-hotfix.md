@@ -2,6 +2,8 @@
 description: Auto-generate emergency hotfix handoff prompt
 ---
 
+**Note**: This handoff is transient content. Use ultrathink (extended thinking) for second-pass review rather than full quality cycle.
+
 Analyze this emergency hotfix session and automatically generate a handoff prompt that captures the critical issue, my investigation, applied fixes, and current state - optimized for urgent continuation.
 
 ## What I Know About This Crisis

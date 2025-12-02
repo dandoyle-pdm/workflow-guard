@@ -2,6 +2,8 @@
 description: Auto-generate debugging session handoff prompt
 ---
 
+**Note**: This handoff is transient content. Use ultrathink (extended thinking) for second-pass review rather than full quality cycle.
+
 Analyze this debugging session and automatically generate a handoff prompt that captures my current understanding of the bug, solution approach, and mental model.
 
 ## What I Know About This Session

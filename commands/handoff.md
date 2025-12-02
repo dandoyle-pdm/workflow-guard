@@ -2,6 +2,8 @@
 description: Auto-generate session continuation handoff prompt
 ---
 
+**Note**: This handoff is transient content. Use ultrathink (extended thinking) for second-pass review rather than full quality cycle.
+
 Analyze the current session and automatically generate a comprehensive handoff prompt that captures my current mental model, insights, and understanding.
 
 ## Session Analysis

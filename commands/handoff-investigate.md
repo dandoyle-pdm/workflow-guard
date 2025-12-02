@@ -2,6 +2,8 @@
 description: Auto-generate investigation/research handoff prompt
 ---
 
+**Note**: This handoff is transient content. Use ultrathink (extended thinking) for second-pass review rather than full quality cycle.
+
 Analyze this investigation session and automatically generate a handoff prompt that captures my research questions, findings, evidence, mental model, and understanding of the codebase.
 
 ## What I Know About This Investigation
