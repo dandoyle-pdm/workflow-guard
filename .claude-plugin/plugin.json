@@ -1,0 +1,15 @@
+{
+  "name": "workflow-guard",
+  "version": "1.0.0",
+  "description": "Workflow Guard - Git branch protection, PR workflow enforcement, and session handoffs",
+  "author": {
+    "name": "Dan Doyle",
+    "url": "https://github.com/dandoyle-pdm"
+  },
+  "homepage": "https://github.com/dandoyle-pdm/workflow-guard",
+  "repository": "https://github.com/dandoyle-pdm/workflow-guard",
+  "license": "MIT",
+  "keywords": ["git-protection", "pr-workflow", "handoff", "branch-safety"],
+  "commands": "./commands",
+  "hooks": "./hooks/hooks.json"
+}
