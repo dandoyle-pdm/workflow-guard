@@ -6,7 +6,7 @@ sequence: 002
 parent_ticket: TICKET-plugin-recipe-001
 title: Align CLAUDE.md with Plugin recipe guidance
 cycle_type: documentation
-status: open
+status: approved
 created: 2025-12-03 17:35
 worktree_path: null
 ---

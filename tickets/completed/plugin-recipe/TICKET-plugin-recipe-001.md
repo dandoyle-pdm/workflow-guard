@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Add Plugin recipe as primary quality cycle for workflow-guard
 cycle_type: documentation
-status: rework_requested
+status: approved
 created: 2025-12-03 16:30
 worktree_path: null
 ---
