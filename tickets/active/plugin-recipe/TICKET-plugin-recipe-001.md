@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Add Plugin recipe as primary quality cycle for workflow-guard
 cycle_type: documentation
-status: critic_review
+status: rework_requested
 created: 2025-12-03 16:30
 worktree_path: null
 ---
@@ -202,19 +202,96 @@ The MEDIUM issues are minor enhancements that would improve clarity but don't bl
 # Expediter Section
 
 ## Validation Results
-- Documentation accuracy: [PASS/FAIL]
-- Consistency with other docs: [PASS/FAIL]
-- Actionable guidance: [PASS/FAIL]
+
+### 1. Documentation Accuracy - PASS
+- [x] Plugin recipe matches plugin-engineer/reviewer/tester cycle
+- [x] Agent names are correct (plugin-engineer, plugin-reviewer, plugin-tester)
+- [x] Focus areas align with actual agent capabilities
+- [x] All plugin resources properly categorized (hooks, commands, engine, config, docs)
+- [x] Examples are specific and actionable
+
+### 2. Cross-Document Consistency - FAIL (minor)
+**Issue Found**: CLAUDE.md still references old cycles:
+- Line 59: "R1 (code-developer → code-reviewer → code-tester) for hook changes"
+- Should be: "Plugin (plugin-engineer → plugin-reviewer → plugin-tester) for hook changes"
+- Line 60: "R2 (tech-writer → tech-editor → tech-publisher) for commands 100+ lines"
+- Should be: "Plugin (plugin-engineer → plugin-reviewer → plugin-tester) for commands"
+- Line 61: "R5 (single reviewer) for minor config changes"
+- Should clarify: Most config changes ARE plugin work (hooks.json, plugin.json)
+
+**Impact**: Moderate - CLAUDE.md is the project instructions file that Claude reads first. Inconsistency could lead to using wrong cycle.
+
+**Other Consistency Checks**:
+- [x] README.md: No quality cycle references (appropriate for user docs)
+- [x] DEVELOPER.md: Correctly updated with Plugin recipe as PRIMARY
+- [x] Handoff commands: All reference Plugin recipe correctly
+
+### 3. Actionable Guidance - PASS
+- [x] Developer can determine which recipe to use (clear PRIMARY designation)
+- [x] Examples help clarify when to use Plugin vs R1 (lines 283-293, 323-335)
+- [x] Agent selection is clear (line 371-382)
+- [x] Focus areas are specific with concrete examples (lines 296-319)
+
+### 4. Completeness vs Acceptance Criteria - PASS
+- [x] Plugin recipe listed as PRIMARY for workflow-guard (line 273, 277)
+- [x] Clear definition of what constitutes "plugin resources" (table lines 283-293)
+- [x] plugin-engineer focus areas documented with examples (lines 296-303)
+- [x] Differentiation between R1 vs Plugin clearly explained (lines 323-335)
+- [x] Examples of when to use Plugin vs R1 (comprehensive table lines 287-293)
 
 ## Quality Gate Decision
-[APPROVE | CREATE_REWORK_TICKET | ESCALATE]
+CREATE_REWORK_TICKET
+
+## Rationale
+
+The DEVELOPER.md changes are **excellent** - comprehensive, clear, and actionable. However, CLAUDE.md has a critical inconsistency that could lead to developers using the wrong cycle.
+
+**Why This Matters:**
+- CLAUDE.md is the project instructions file that Claude reads at session start
+- Inconsistent guidance between CLAUDE.md and DEVELOPER.md creates confusion
+- CLAUDE.md line 59 explicitly says "R1 for hook changes" which contradicts DEVELOPER.md's "Plugin recipe PRIMARY"
+
+**Why Not Just Approve:**
+- This is a CONSISTENCY issue, not a DOCUMENTATION issue
+- The documentation itself (DEVELOPER.md) is perfect
+- But the project instructions (CLAUDE.md) don't match
+- Future developers might see CLAUDE.md first and use wrong cycle
+
+**Recommendation:**
+Create a small rework ticket to align CLAUDE.md with DEVELOPER.md's Plugin recipe guidance. This can be done quickly by plugin-engineer or even as a fast-path fix.
 
 ## Next Steps
-[If approved: integration steps | If rework: what needs fixing | If escalate: why]
 
-**Status Update**: [Date/time] - Changed status to `approved`
+1. Create TICKET-plugin-recipe-002.md to align CLAUDE.md with Plugin recipe
+2. Update CLAUDE.md lines 59-61 to reference Plugin recipe instead of R1/R2/R5
+3. Clarify that "quality cycles" in CLAUDE.md means Plugin recipe for workflow-guard
+4. After CLAUDE.md is aligned, return to approve this ticket
+
+**Suggested Rework Ticket Scope:**
+```markdown
+# TICKET-plugin-recipe-002
+
+Update CLAUDE.md to align with DEVELOPER.md's Plugin recipe guidance.
+
+**Changes Needed:**
+- Line 59: Change "R1 (code-developer → code-reviewer → code-tester) for hook changes" to "Plugin (plugin-engineer → plugin-reviewer → plugin-tester) for all plugin resources"
+- Lines 60-61: Update to reference Plugin recipe or clarify exceptions
+- Ensure consistency with DEVELOPER.md lines 273-335
+```
+
+**Alternative - Approve Now with Caveat:**
+If you want to approve this ticket and handle CLAUDE.md separately, that's also reasonable. The documentation work (DEVELOPER.md) is complete and correct. The inconsistency is in a different file.
+
+**Status Update**: [2025-12-03 17:30] - Changed status to `rework_requested`
 
 # Changelog
+
+## [2025-12-03 17:30] - plugin-tester
+- Validation completed
+- Decision: CREATE_REWORK_TICKET
+- Found inconsistency in CLAUDE.md (still references R1/R2/R5 instead of Plugin recipe)
+- DEVELOPER.md changes are excellent and complete
+- Recommended creating TICKET-plugin-recipe-002 to align CLAUDE.md
 
 ## [2025-12-03 17:15] - plugin-reviewer
 - Audit completed
