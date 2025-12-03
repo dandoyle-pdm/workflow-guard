@@ -270,17 +270,62 @@ grep "ERROR: Failed to parse" ~/.claude/logs/hooks-debug.log
 
 ## Contribution Workflow
 
-This plugin follows quality chains:
+ALL work products require quality cycles. Select based on artifact type:
 
-**Plugin Recipe**: `plugin-engineer` → `plugin-reviewer` → `plugin-tester`
+### Quality Cycle Matrix
+
+| Recipe | Artifact Type | Cycle | When |
+|--------|--------------|-------|------|
+| **R1** | Production code | code-developer → code-reviewer → code-tester | Any .go, .py, .sh, .js, .ts changes |
+| **R2** | Documentation (100+ lines) | tech-writer → tech-editor → tech-publisher | README, DEVELOPER, guides |
+| **R3** | Handoff prompts | tech-editor (quick check) | commands/handoff*.md |
+| **R4** | Read-only queries | None (fast path) | Research, exploration |
+| **R5** | Config/minor changes | Single reviewer | .yaml, .json, minor tweaks |
+| **Arch** | Architecture docs | architect → tech-editor | ARCHITECTURE.md, design docs |
+| **Ticket** | Tickets | lite cycle (tech-editor) | tickets/queue/*.md |
+
+### Document Types → Transformers
+
+| Document Type | Transformer | Notes |
+|--------------|-------------|-------|
+| Most markdown | tech-writer | R2 cycle for substantive docs |
+| Architecture docs | architect | Design decisions, trade-offs |
+| API/reference docs | tech-writer | Focus on accuracy |
+| Tickets | tech-editor (lite) | Quick validation of format/completeness |
+| Handoff prompts | tech-editor (lite) | R3 - single pass |
+
+### Lite Cycle (for Tickets & Handoffs)
+
+Lite cycle = single reviewer pass (tech-editor):
+- Validate structure/format
+- Check completeness
+- Verify references exist
+- No implementation review needed
+
+```
+Ticket → tech-editor review → approved/needs-changes
+```
+
+### Full Cycle Process
 
 1. Create ticket in project's `tickets/queue/`
-2. Use Task tool with `subagent_type: "plugin-engineer"`
+2. Use Task tool with appropriate `subagent_type`
 3. Agent implements changes, commits
-4. Plugin-reviewer validates
-5. Plugin-tester verifies hook behavior
+4. Reviewer validates
+5. Tester verifies behavior
+6. Move ticket to `tickets/completed/{branch}/`
+7. PR to main
 
-See `qc-router/recipes/plugin.md` for full specification.
+### Agent Selection
+
+| Work Type | Primary Agent | Reviewer | Tester |
+|-----------|--------------|----------|--------|
+| Go/Python code | code-developer | code-reviewer | code-tester |
+| Plugin resources | plugin-engineer | plugin-reviewer | plugin-tester |
+| Technical docs | tech-writer | tech-editor | tech-publisher |
+| Architecture | architect | tech-editor | - |
+
+See `qc-router/recipes/` for full specifications.
 
 ## Dependencies
 
