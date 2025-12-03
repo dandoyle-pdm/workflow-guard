@@ -19,6 +19,36 @@
           "timeout": 10
         }
       ]
+    },
+    {
+      "matcher": "mcp__git__git_commit|mcp__git__git_add",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-mcp-git-commits.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/confirm-code-edits.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/diagnostic-logger.sh",
+          "timeout": 5
+        }
+      ]
     }
   ]
 }
