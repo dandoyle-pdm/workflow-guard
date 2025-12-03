@@ -31,6 +31,16 @@
       ]
     },
     {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/confirm-code-edits.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
       "matcher": "*",
       "hooks": [
         {
