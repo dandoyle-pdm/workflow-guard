@@ -56,9 +56,10 @@ All handoff commands auto-generate structured prompts with system state, tool us
 ## Development Rules
 
 1. **Quality Cycles Required:**
-   - R1 (code-developer → code-reviewer → code-tester) for hook changes
-   - R2 (tech-writer → tech-editor → tech-publisher) for commands 100+ lines
-   - R5 (single reviewer) for minor config changes
+   **Plugin recipe is PRIMARY** - workflow-guard is a Claude Code plugin:
+   - Plugin (plugin-engineer → plugin-reviewer → plugin-tester) for ALL plugin resources
+   - This includes: hooks, commands, engine, configs, developer docs
+   - See DEVELOPER.md "Contribution Workflow" for complete guidance
 
 2. **Testing Requirements:**
    - All hook changes must be tested in a real git repo

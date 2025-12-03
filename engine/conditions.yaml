@@ -81,9 +81,57 @@ conditions:
     pattern: '\bsed\b.*-i'
     description: "Detects sed with in-place flag"
 
+  is-heredoc:
+    type: regex
+    field: tool_input.command
+    pattern: '<<\s*[''"]?\w+[''"]?'
+    description: "Detects heredoc patterns"
+
+  is-cat-redirect:
+    type: regex
+    field: tool_input.command
+    pattern: '\bcat\b.*>\s*'
+    description: "Detects cat > file patterns"
+
+  is-echo-redirect:
+    type: regex
+    field: tool_input.command
+    pattern: '\becho\b.*>\s*'
+    description: "Detects echo > file patterns"
+
+  is-bash-file-write:
+    type: compound
+    any:
+      - ref: is-output-redirect
+      - ref: is-append-redirect
+      - ref: is-heredoc
+      - ref: is-tee-command
+      - ref: is-sed-inplace
+      - ref: is-cat-redirect
+      - ref: is-echo-redirect
+    description: "Matches any Bash file write pattern"
+
   # ===========================================================================
   # FILE PATH PATTERNS
   # ===========================================================================
+
+  is-code-file:
+    type: regex
+    field: tool_input.file_path
+    pattern: '\.(go|py|sh|js|ts|tsx|jsx)$'
+    description: "Matches code files by extension"
+
+  is-tickets-path:
+    type: regex
+    field: tool_input.file_path
+    pattern: '/tickets/'
+    description: "Matches files in tickets directories"
+
+  is-test-file:
+    type: regex
+    field: tool_input.file_path
+    pattern: '(_test\.go|test_.*\.py|\.test\.(js|ts|tsx)|\.spec\.(js|ts|tsx))$'
+    description: "Matches test files"
 
   is-env-file:
     type: glob
@@ -110,3 +158,9 @@ conditions:
     type: exists
     field: tool_input.command
     description: "True if event has a command"
+
+  skip-confirmation-enabled:
+    type: equals
+    field: env.SKIP_EDIT_CONFIRMATION
+    value: "true"
+    description: "Bypass when SKIP_EDIT_CONFIRMATION=true"

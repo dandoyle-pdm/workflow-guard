@@ -34,11 +34,18 @@ func main() {
 	}
 
 	// Store raw data for field access
-	event.Raw = make(map[string]interface{})
+	event.Raw = make(map[string]any)
 	event.Raw["hook_type"] = event.HookType
 	event.Raw["tool_name"] = event.ToolName
 	event.Raw["session_id"] = event.SessionID
 	event.Raw["tool_input"] = event.ToolInput
+
+	// Add environment variables for condition evaluation
+	envMap := make(map[string]any)
+	if skipConfirm := os.Getenv("SKIP_EDIT_CONFIRMATION"); skipConfirm != "" {
+		envMap["SKIP_EDIT_CONFIRMATION"] = skipConfirm
+	}
+	event.Raw["env"] = envMap
 
 	// Also check environment for hook type
 	if envHookType := os.Getenv("CLAUDE_HOOK_TYPE"); envHookType != "" {

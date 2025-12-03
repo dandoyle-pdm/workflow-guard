@@ -270,17 +270,119 @@ grep "ERROR: Failed to parse" ~/.claude/logs/hooks-debug.log
 
 ## Contribution Workflow
 
-This plugin follows quality chains:
+**workflow-guard is a Claude Code plugin. ALL work uses the Plugin recipe.**
 
-**Plugin Recipe**: `plugin-engineer` → `plugin-reviewer` → `plugin-tester`
+### Primary Quality Cycle
+
+**Plugin recipe is PRIMARY** for all workflow-guard resources:
+
+| Recipe | Cycle | Focus Areas |
+|--------|-------|-------------|
+| **Plugin** | plugin-engineer → plugin-reviewer → plugin-tester | Logic, Design, Security, Compatibility |
+
+### Plugin Resources (use Plugin recipe)
+
+All workflow-guard components integrate with Claude Code's hook system:
+
+| Resource Type | Examples | Why Plugin Recipe |
+|--------------|----------|-------------------|
+| **Hooks** | hooks/*.sh, hooks.json | Hook exit codes, JSON parsing, fail-safe behavior |
+| **Commands** | commands/*.md | Slash command frontmatter, prompt template structure |
+| **Engine** | engine/*.go, engine/*.yaml | Hook dispatcher, rule/condition definitions, JSON input format |
+| **Plugin Config** | .claude-plugin/plugin.json | Plugin manifest, hook matchers |
+| **Developer Docs** | DEVELOPER.md, README.md | Plugin development patterns, hook lifecycle |
+
+### Plugin Recipe Focus Areas
+
+**plugin-engineer (Creator)** reviews for:
+- **Logic**: Does the hook/rule/command do what it claims?
+  - Example: "Does block-main-commits correctly detect `git commit` commands?"
+- **Design**: Is this the right approach for Claude Code's architecture?
+  - Example: "Should we use exit 2 (block) or exit 0 (allow) for this scenario?"
+- **Patterns**: Does it follow established plugin patterns?
+  - Example: "Are we using `printf` instead of `echo` to prevent injection?"
+
+**plugin-reviewer (Critic)** reviews for:
+- **Security**: Fail-safe behavior, injection prevention
+  - Example: "What happens if user controls the cwd variable?"
+- **Compatibility**: Works with Claude Code hook system
+  - Example: "Does this handle malformed JSON gracefully?"
+- **Edge Cases**: Handles unexpected input
+  - Example: "What if CLAUDE_HOME isn't set?"
+
+**plugin-tester (Expediter)** verifies:
+- **Integration**: Works in real Claude Code environment
+  - Example: "Does the hook actually block commits to main?"
+- **Restart Verification**: Changes take effect after restart
+  - Example: "After modifying the hook, did restart pick up changes?"
+- **Exit Code Semantics**: 0/2 behave correctly
+  - Example: "Does exit 2 show the error message to Claude?"
+
+**NOT generic code review** - focus is on Claude Code plugin integration, not just code quality.
+
+### Other Recipes (when NOT plugin work)
+
+Use these recipes only for work that doesn't integrate with Claude Code:
+
+| Recipe | Artifact Type | Cycle | When |
+|--------|--------------|-------|------|
+| **R1** | Generic utilities | code-developer → code-reviewer → code-tester | Scripts with NO Claude Code integration |
+| **R2** | Documentation (100+ lines) | tech-writer → tech-editor → tech-publisher | Large narrative docs (consider tech-editor for plugin docs) |
+| **R3** | Handoff prompts | tech-editor (quick check) | Quick validation only |
+| **R4** | Read-only queries | None (fast path) | Research, exploration |
+| **R5** | Config/minor changes | Single reviewer | Trivial tweaks (most config is Plugin recipe) |
+| **Arch** | Architecture docs | architect → tech-editor | System design decisions |
+| **Ticket** | Tickets | lite cycle (tech-editor) | tickets/queue/*.md |
+
+### Document Types → Transformers
+
+| Document Type | Transformer | Notes |
+|--------------|-------------|-------|
+| Most markdown | tech-writer | R2 cycle for substantive docs |
+| Architecture docs | architect | Design decisions, trade-offs |
+| API/reference docs | tech-writer | Focus on accuracy |
+| Tickets | tech-editor (lite) | Quick validation of format/completeness |
+| Handoff prompts | tech-editor (lite) | R3 - single pass |
+
+### Lite Cycle (for Tickets & Handoffs)
+
+Lite cycle = single reviewer pass (tech-editor):
+- Validate structure/format
+- Check completeness
+- Verify references exist
+- No implementation review needed
+
+```
+Ticket → tech-editor review → approved/needs-changes
+```
+
+### Full Cycle Process
 
 1. Create ticket in project's `tickets/queue/`
-2. Use Task tool with `subagent_type: "plugin-engineer"`
+2. Use Task tool with appropriate `subagent_type`
 3. Agent implements changes, commits
-4. Plugin-reviewer validates
-5. Plugin-tester verifies hook behavior
+4. Reviewer validates
+5. Tester verifies behavior
+6. Move ticket to `tickets/completed/{branch}/`
+7. PR to main
 
-See `qc-router/recipes/plugin.md` for full specification.
+### Agent Selection
+
+**For workflow-guard** (Claude Code plugin), use Plugin recipe:
+
+| Work Type | Primary Agent | Reviewer | Tester |
+|-----------|--------------|----------|--------|
+| **Plugin resources** (hooks, commands, engine, config) | **plugin-engineer** | **plugin-reviewer** | **plugin-tester** |
+| Technical docs (narrative, guides) | tech-writer | tech-editor | tech-publisher |
+| Architecture | architect | tech-editor | - |
+
+**For generic utilities** (no Claude Code integration):
+
+| Work Type | Primary Agent | Reviewer | Tester |
+|-----------|--------------|----------|--------|
+| Generic scripts/code | code-developer | code-reviewer | code-tester |
+
+See `qc-router/recipes/` for full specifications.
 
 ## Dependencies
 

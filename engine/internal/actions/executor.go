@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -35,7 +36,7 @@ func Execute(action *config.Action, event *conditions.HookEvent, cfg *config.Con
 		merged := refAction
 		if len(action.Params) > 0 {
 			if merged.Params == nil {
-				merged.Params = make(map[string]interface{})
+				merged.Params = make(map[string]any)
 			}
 			for k, v := range action.Params {
 				merged.Params[k] = v
@@ -105,7 +106,7 @@ func executeLog(action *config.Action, event *conditions.HookEvent) *Response {
 	}
 
 	// Create log entry
-	entry := map[string]interface{}{
+	entry := map[string]any{
 		"timestamp":  time.Now().Format(time.RFC3339),
 		"event_type": event.HookType,
 		"tool_name":  event.ToolName,
@@ -132,7 +133,7 @@ func executeChain(action *config.Action, event *conditions.HookEvent, cfg *confi
 		// Merge parent params into sub-action params
 		if len(action.Params) > 0 {
 			if subAction.Params == nil {
-				subAction.Params = make(map[string]interface{})
+				subAction.Params = make(map[string]any)
 			}
 			for k, v := range action.Params {
 				// Only add if not already present (sub-action params take precedence)
@@ -162,7 +163,7 @@ func executeConditional(action *config.Action, event *conditions.HookEvent, cfg 
 	return nil
 }
 
-func renderTemplate(template string, event *conditions.HookEvent, params map[string]interface{}) string {
+func renderTemplate(template string, event *conditions.HookEvent, params map[string]any) string {
 	result := template
 
 	// Build context from event and params
@@ -176,10 +177,8 @@ func renderTemplate(template string, event *conditions.HookEvent, params map[str
 	}
 
 	// Add params (override if same key)
-	if params != nil {
-		for k, v := range params {
-			context[k] = fmt.Sprintf("%v", v)
-		}
+	for k, v := range params {
+		context[k] = fmt.Sprintf("%v", v)
 	}
 
 	// Replace {{variable}} with values
@@ -197,6 +196,11 @@ func renderTemplate(template string, event *conditions.HookEvent, params map[str
 			break
 		}
 	}
+
+	// Remove any remaining unreplaced template variables
+	// This handles cases where a variable doesn't exist in the context
+	re := regexp.MustCompile(`\{\{[^}]+\}\}`)
+	result = re.ReplaceAllString(result, "")
 
 	return result
 }
