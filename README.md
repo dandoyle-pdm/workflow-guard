@@ -110,6 +110,102 @@ All hooks log to `~/.claude/logs/hooks-debug.log` for troubleshooting:
 tail -f ~/.claude/logs/hooks-debug.log
 ```
 
+### Diagnostic Hook Data Logging
+
+For hook development and debugging, you can enable comprehensive hook data logging to understand what data is available in different contexts.
+
+**Enable diagnostic logging:**
+```bash
+export CLAUDE_HOOK_DIAGNOSTICS=true
+```
+
+**Log location:**
+```
+~/.claude/logs/hook-diagnostics.jsonl
+```
+
+The diagnostic logger captures the complete JSON payload sent to PreToolUse hooks for all tools (Bash, Edit, Write, MCP tools). This helps developers understand:
+- What fields are available for each tool type
+- How tool_input differs between tool types
+- Additional context provided by Claude Code (session_id, cwd, etc.)
+
+**View logs:**
+```bash
+# View all logged hook data
+cat ~/.claude/logs/hook-diagnostics.jsonl
+
+# Pretty-print recent entries
+tail -5 ~/.claude/logs/hook-diagnostics.jsonl | jq '.'
+
+# Filter by tool type
+jq 'select(.data.tool_name == "Bash")' ~/.claude/logs/hook-diagnostics.jsonl
+
+# Extract just tool names to see what's being captured
+jq -r '.data.tool_name' ~/.claude/logs/hook-diagnostics.jsonl | sort | uniq -c
+```
+
+**Expected data structure:**
+
+The hook receives a JSON object with these common fields:
+```json
+{
+  "tool_name": "Bash|Edit|Write|mcp__*",
+  "tool_input": { /* tool-specific parameters */ },
+  "session_id": "unique-session-id",
+  "cwd": "/current/working/directory"
+}
+```
+
+For MCP tools, additional fields may include:
+```json
+{
+  "mcp_server": "server-name"
+}
+```
+
+**Example tool_input by type:**
+
+*Bash tool:*
+```json
+{
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git status",
+    "description": "Check repository status"
+  }
+}
+```
+
+*Edit tool:*
+```json
+{
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/path/to/file",
+    "old_string": "original text",
+    "new_string": "modified text"
+  }
+}
+```
+
+*MCP git tool:*
+```json
+{
+  "tool_name": "mcp__git__git_commit",
+  "tool_input": {
+    "repo_path": "/path/to/repo",
+    "message": "commit message"
+  },
+  "mcp_server": "git"
+}
+```
+
+**Important notes:**
+- Diagnostic logging is **disabled by default** for performance
+- The diagnostic hook **never blocks operations** (always exits 0)
+- Logs use JSON Lines format (one JSON object per line) for easy parsing
+- Clear logs periodically as they can grow large with extensive tool use
+
 ## Workflow Overview
 
 ```
