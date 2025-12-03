@@ -1,0 +1,8 @@
+{
+  "hook_type": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls -la"
+  },
+  "session_id": "test-session-123"
+}

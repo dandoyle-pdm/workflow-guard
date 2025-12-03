@@ -1,0 +1,142 @@
+# =============================================================================
+# Claude Hooks Engine - Rules Configuration
+# =============================================================================
+# This file defines the rules that control Claude Code behavior.
+# Rules are evaluated in priority order (higher priority first).
+# =============================================================================
+
+version: "1.0"
+
+metadata:
+  name: "Workflow Guard Security Rules"
+  description: "Core security and workflow enforcement rules"
+  author: "workflow-guard"
+
+rules:
+  # ===========================================================================
+  # SECURITY: Block Dangerous Bash Commands
+  # ===========================================================================
+
+  - id: block-bash-file-redirects
+    name: Block Bash File Redirects
+    description: |
+      Prevents file writes via shell redirection (>, >>).
+      Forces use of Edit tool for proper tracking.
+    enabled: true
+    priority: 100
+    tags: [security, bash, bypass-prevention]
+
+    trigger:
+      event: PreToolUse
+      matcher: Bash
+
+    conditions:
+      ref: is-any-redirect
+
+    actions:
+      - ref: block-and-log
+        params:
+          message: |
+            File modification via Bash redirection is blocked.
+            Please use the Edit tool for file modifications.
+            Attempted command: {{command}}
+
+  - id: block-destructive-rm
+    name: Block Destructive rm Commands
+    description: Prevents rm -rf and similar destructive commands
+    enabled: true
+    priority: 100
+    tags: [security, bash]
+
+    trigger:
+      event: PreToolUse
+      matcher: Bash
+
+    conditions:
+      ref: is-destructive-rm
+
+    actions:
+      - ref: block
+        params:
+          message: "Destructive rm command blocked for safety"
+
+  - id: block-sudo
+    name: Block sudo Commands
+    description: Prevents privilege escalation via sudo
+    enabled: true
+    priority: 100
+    tags: [security, bash]
+
+    trigger:
+      event: PreToolUse
+      matcher: Bash
+
+    conditions:
+      ref: is-sudo-command
+
+    actions:
+      - ref: block
+        params:
+          message: "sudo commands are not permitted"
+
+  # ===========================================================================
+  # BYPASS PREVENTION: Block Alternative Write Methods
+  # ===========================================================================
+
+  - id: block-tee-writes
+    name: Block tee Command
+    description: Prevents file writes via tee
+    enabled: true
+    priority: 95
+    tags: [security, bypass-prevention]
+
+    trigger:
+      event: PreToolUse
+      matcher: Bash
+
+    conditions:
+      ref: is-tee-command
+
+    actions:
+      - ref: block
+        params:
+          message: "File writes via 'tee' are blocked. Use Edit tool instead."
+
+  - id: block-sed-inplace
+    name: Block In-Place sed
+    description: Prevents in-place file edits via sed -i
+    enabled: true
+    priority: 95
+    tags: [security, bypass-prevention]
+
+    trigger:
+      event: PreToolUse
+      matcher: Bash
+
+    conditions:
+      ref: is-sed-inplace
+
+    actions:
+      - ref: block
+        params:
+          message: "In-place sed edits are blocked. Use Edit tool instead."
+
+  # ===========================================================================
+  # OBSERVABILITY: Logging
+  # ===========================================================================
+
+  - id: log-all-tool-use
+    name: Log All Tool Usage
+    description: Creates audit trail of all tool usage
+    enabled: false
+    priority: 10
+    tags: [observability, logging]
+
+    trigger:
+      event: PostToolUse
+      matcher: ""
+
+    actions:
+      - type: log
+        params:
+          log_file: "~/.claude/logs/tool-use.jsonl"

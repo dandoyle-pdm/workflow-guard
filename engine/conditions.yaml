@@ -1,0 +1,112 @@
+# =============================================================================
+# Claude Hooks Engine - Conditions Library
+# =============================================================================
+# Reusable condition definitions that can be referenced in rules.
+# =============================================================================
+
+version: "1.0"
+
+conditions:
+  # ===========================================================================
+  # TOOL TYPE DETECTION
+  # ===========================================================================
+
+  is-bash-tool:
+    type: equals
+    field: tool_name
+    value: Bash
+    description: "Matches Bash tool"
+
+  is-write-tool:
+    type: compound
+    any:
+      - type: equals
+        field: tool_name
+        value: Edit
+      - type: equals
+        field: tool_name
+        value: Write
+      - type: equals
+        field: tool_name
+        value: MultiEdit
+      - type: equals
+        field: tool_name
+        value: NotebookEdit
+    description: "Matches file-writing tools"
+
+  # ===========================================================================
+  # BASH COMMAND PATTERNS
+  # ===========================================================================
+
+  is-output-redirect:
+    type: regex
+    field: tool_input.command
+    pattern: '>\s*[^>|&]'
+    description: "Detects output redirection (>)"
+
+  is-append-redirect:
+    type: regex
+    field: tool_input.command
+    pattern: '>>'
+    description: "Detects append redirection (>>)"
+
+  is-any-redirect:
+    type: compound
+    any:
+      - ref: is-output-redirect
+      - ref: is-append-redirect
+
+  is-destructive-rm:
+    type: regex
+    field: tool_input.command
+    pattern: 'rm\s+.*-[rf]'
+    flags: [ignorecase]
+    description: "Detects rm with -r or -f flags"
+
+  is-sudo-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\bsudo\s+'
+    description: "Detects sudo usage"
+
+  is-tee-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\btee\s+'
+    description: "Detects tee command"
+
+  is-sed-inplace:
+    type: regex
+    field: tool_input.command
+    pattern: '\bsed\b.*-i'
+    description: "Detects sed with in-place flag"
+
+  # ===========================================================================
+  # FILE PATH PATTERNS
+  # ===========================================================================
+
+  is-env-file:
+    type: glob
+    field: tool_input.file_path
+    pattern: "**/.env*"
+    description: "Matches .env files"
+
+  is-git-internal:
+    type: glob
+    field: tool_input.file_path
+    pattern: "**/.git/**"
+    description: "Matches .git internal files"
+
+  # ===========================================================================
+  # UTILITY CONDITIONS
+  # ===========================================================================
+
+  has-file-path:
+    type: exists
+    field: tool_input.file_path
+    description: "True if event has a file_path"
+
+  has-command:
+    type: exists
+    field: tool_input.command
+    description: "True if event has a command"
