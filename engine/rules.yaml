@@ -14,6 +14,49 @@ metadata:
 
 rules:
   # ===========================================================================
+  # WORKFLOW: Require Confirmation for Code Edits
+  # ===========================================================================
+
+  - id: confirm-code-edits
+    name: Require Confirmation for Code File Edits
+    description: |
+      Requires user confirmation before any code file modification.
+      Catches Edit, Write, and Bash bypass patterns.
+    enabled: true
+    priority: 200
+    tags: [security, workflow, code-protection]
+
+    trigger:
+      event: PreToolUse
+      matcher: "Bash|Edit|Write|MultiEdit|NotebookEdit"
+
+    conditions:
+      all:
+        - any:
+            - all:  # Edit/Write to code file
+                - ref: is-write-tool
+                - ref: is-code-file
+            - all:  # Bash write pattern
+                - ref: is-bash-tool
+                - ref: is-bash-file-write
+        - not:
+            any:
+              - ref: is-tickets-path
+              - ref: is-test-file
+              - ref: skip-confirmation-enabled
+
+    actions:
+      - ref: require-confirmation
+        params:
+          message: |
+            CODE EDIT CONFIRMATION REQUIRED
+
+            Tool: {{tool_name}}
+
+            Did the user explicitly ask for this change?
+            If NO: Report findings instead of making changes.
+
+  # ===========================================================================
   # SECURITY: Block Dangerous Bash Commands
   # ===========================================================================
 
