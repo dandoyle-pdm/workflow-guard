@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Port declarative hook engine to workflow-guard
 cycle_type: development
-status: open
+status: completed
 created: 2025-12-03 14:30
 worktree_path: null
 ---
