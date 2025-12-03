@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: TICKET-declarative-engine-001
 title: Implement code edit confirmation rules with Bash bypass prevention
 cycle_type: development
-status: active
+status: critic_review
 created: 2025-12-03 14:30
 worktree_path: null
 ---
@@ -215,16 +215,48 @@ echo '{"tool_name":"Edit","tool_input":{"file_path":"/tmp/README.md"}}' | python
 # Creator Section
 
 ## Implementation Notes
-[To be filled by code-developer]
+Successfully implemented comprehensive code edit confirmation rules in the Go declarative hook engine.
+
+**Key Implementation Details:**
+1. Added 8 new conditions to `conditions.yaml`:
+   - `is-code-file`: Matches .go, .py, .sh, .js, .ts, .tsx, .jsx files
+   - `is-heredoc`: Detects heredoc patterns (`<< 'EOF'`)
+   - `is-cat-redirect`: Detects `cat > file` patterns
+   - `is-echo-redirect`: Detects `echo > file` patterns
+   - `is-bash-file-write`: Compound condition combining all Bash write patterns
+   - `is-tickets-path`: Exclusion for /tickets/ directories
+   - `is-test-file`: Exclusion for test files (*_test.go, test_*.py, *.test.ts, *.spec.ts)
+   - `skip-confirmation-enabled`: Exclusion when SKIP_EDIT_CONFIRMATION=true
+
+2. Added `confirm-code-edits` rule to `rules.yaml`:
+   - Priority 200 (higher than existing blocking rules at 100)
+   - Matches Edit, Write, MultiEdit, NotebookEdit, and Bash tools
+   - Uses "ask" decision (exit 2) instead of "deny" (exit 1)
+   - Applies to code files only, with exclusions for tickets/, test files, and skip flag
+   - Catches both direct Edit/Write tool usage AND Bash bypass patterns
+
+3. All 10 test scenarios passed:
+   - 6 scenarios correctly trigger confirmation (exit 2)
+   - 4 exclusion scenarios correctly allow (exit 0)
+
+**Configuration Location:**
+- Source files: `/home/ddoyle/.claude/plugins/workflow-guard/engine/*.yaml`
+- Runtime location: `~/.claude/*.yaml` (copied for dispatcher to load)
 
 ## Questions/Concerns
-[To be filled by code-developer]
+None. Implementation is complete and all tests pass.
 
 ## Changes Made
 - File changes:
-- Commits:
+  - `engine/conditions.yaml`: Added 8 new conditions
+  - `engine/rules.yaml`: Added confirm-code-edits rule (priority 200)
+  - `~/.claude/conditions.yaml`: Updated runtime config
+  - `~/.claude/rules.yaml`: Updated runtime config
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+- Commits:
+  - e02e569 - feat: add code edit confirmation rules
+
+**Status Update**: 2025-12-03 13:15 - Changed status to `critic_review`
 
 # Critic Section
 
