@@ -1,0 +1,8 @@
+{
+  "hook_type": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "echo 'hello' > test.txt"
+  },
+  "session_id": "test-session-123"
+}

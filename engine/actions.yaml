@@ -1,0 +1,81 @@
+# =============================================================================
+# Claude Hooks Engine - Actions Library
+# =============================================================================
+# Reusable action definitions that can be referenced in rules.
+# =============================================================================
+
+version: "1.0"
+
+actions:
+  # ===========================================================================
+  # DECISION ACTIONS
+  # ===========================================================================
+
+  block:
+    type: decision
+    decision: deny
+    message: "{{message}}"
+    description: "Block the operation with a message"
+
+  allow:
+    type: decision
+    decision: allow
+    description: "Allow the operation without prompting"
+
+  require-confirmation:
+    type: decision
+    decision: ask
+    message: "{{message}}"
+    description: "Ask user for confirmation"
+
+  block-security:
+    type: decision
+    decision: deny
+    message: "SECURITY: {{message}}"
+    description: "Block with security prefix"
+
+  block-policy:
+    type: decision
+    decision: deny
+    message: "POLICY: {{message}}"
+    description: "Block with policy prefix"
+
+  # ===========================================================================
+  # LOGGING ACTIONS
+  # ===========================================================================
+
+  log-to-file:
+    type: log
+    params:
+      log_file: "~/.claude/logs/hooks.jsonl"
+    description: "Log event to default log file"
+
+  log-security-events:
+    type: log
+    params:
+      log_file: "~/.claude/logs/security.jsonl"
+    description: "Log to security-specific log"
+
+  log-blocked:
+    type: log
+    params:
+      log_file: "~/.claude/logs/blocked.jsonl"
+    description: "Log blocked operations"
+
+  # ===========================================================================
+  # CHAIN ACTIONS
+  # ===========================================================================
+
+  block-and-log:
+    type: chain
+    actions:
+      - ref: log-blocked
+      - ref: block
+    description: "Log the event then block it"
+
+  confirm-and-log:
+    type: chain
+    actions:
+      - ref: log-to-file
+      - ref: require-confirmation
+    description: "Log then ask for confirmation"
