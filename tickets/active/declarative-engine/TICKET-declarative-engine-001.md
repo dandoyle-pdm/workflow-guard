@@ -21,24 +21,33 @@ Port the declarative hook engine from qc-router/research/claude-hooks-engine to 
 **Target Location:** `/home/ddoyle/.claude/plugins/workflow-guard/engine/`
 
 **Files to Create:**
-1. `engine/dispatcher.py` - Core rule evaluation engine (adapt from source)
-2. `engine/cli.py` - CLI tools for inspection/testing (adapt from source)
-3. `engine/conditions.yaml` - Reusable condition definitions (scaffold)
-4. `engine/actions.yaml` - Reusable action definitions (scaffold)
-5. `engine/rules.yaml` - Rule definitions (scaffold)
-6. Update `hooks/hooks.json` - Single dispatcher entry point
+1. `engine/cmd/dispatcher/main.go` - Core rule evaluation engine (Go binary)
+2. `engine/cmd/hookctl/main.go` - CLI tools for inspection/testing
+3. `engine/internal/` - Internal packages (config, conditions, actions, rules)
+4. `engine/conditions.yaml` - Reusable condition definitions (scaffold)
+5. `engine/actions.yaml` - Reusable action definitions (scaffold)
+6. `engine/rules.yaml` - Rule definitions (scaffold)
+7. `engine/go.mod` - Go module definition
+8. Update `hooks/hooks.json` - Single dispatcher entry point
+
+**Why Go over Python:**
+- Fast startup (~1ms vs ~100ms) - critical for hooks on every tool invocation
+- Single static binary - no Python/PyYAML dependencies
+- Excellent JSON/YAML and regex performance
+- Drop-in deployment
 
 ## Acceptance Criteria
-- [ ] dispatcher.py loads and evaluates rules from YAML configuration
+- [ ] dispatcher binary loads and evaluates rules from YAML configuration
 - [ ] Conditions support: regex, glob, equals, exists, compound (all/any/not)
 - [ ] Actions support: decision (allow/deny/ask), log, script, chain
 - [ ] Single hooks.json entry routes ALL events to dispatcher
 - [ ] Existing bash hooks callable via `script` action type
-- [ ] `python3 engine/cli.py list` shows loaded rules
-- [ ] `python3 engine/cli.py test event.json` validates rule matching
+- [ ] `hookctl list` shows loaded rules
+- [ ] `hookctl test event.json` validates rule matching
 - [ ] Exit codes correct: 0=continue, 2=block with stderr message
 - [ ] JSON output for permissionDecision when blocking/asking
 - [ ] Fail-safe: invalid config continues normally (doesn't break Claude)
+- [ ] Go binaries build without errors (`go build ./...`)
 
 # Context
 
@@ -68,14 +77,21 @@ The declarative engine solves this by:
 ```
 workflow-guard/
 ├── engine/
-│   ├── dispatcher.py      # Core engine
-│   ├── cli.py             # Inspection tools
-│   ├── conditions.yaml    # Condition library
-│   ├── actions.yaml       # Action library
-│   └── rules.yaml         # Rule definitions
+│   ├── cmd/
+│   │   ├── dispatcher/main.go    # Hook dispatcher binary
+│   │   └── hookctl/main.go       # CLI tool binary
+│   ├── internal/
+│   │   ├── config/               # YAML config loading
+│   │   ├── conditions/           # Condition evaluation
+│   │   ├── actions/              # Action execution
+│   │   └── rules/                # Rule matching
+│   ├── conditions.yaml           # Condition library
+│   ├── actions.yaml              # Action library
+│   ├── rules.yaml                # Rule definitions
+│   └── go.mod                    # Go module
 ├── hooks/
-│   ├── hooks.json         # Updated to use dispatcher
-│   ├── block-main-commits.sh      # Existing (wrapped as script action)
+│   ├── hooks.json                # Updated to use dispatcher
+│   ├── block-main-commits.sh     # Existing (wrapped as script action)
 │   └── ...
 ```
 
@@ -86,7 +102,7 @@ workflow-guard/
     "matcher": "",
     "hooks": [{
       "type": "command",
-      "command": "python3 engine/dispatcher.py"
+      "command": "engine/bin/dispatcher"
     }]
   }]
 }
@@ -166,11 +182,12 @@ actions:
 # Expediter Section
 
 ## Validation Results
-- Python syntax: [python3 -m py_compile]
-- Rule loading: [cli.py list]
-- Event handling: [cli.py test with sample events]
+- Go build: [go build ./... succeeds]
+- Go tests: [go test ./... passes]
+- Rule loading: [hookctl list works]
+- Event handling: [hookctl test with sample events]
 - Existing hooks: [Verify block-main-commits still works via script action]
-- Fail-safe: [Invalid YAML doesn't crash]
+- Fail-safe: [Invalid YAML doesn't crash dispatcher]
 
 ## Quality Gate Decision
 [APPROVE | CREATE_REWORK_TICKET | ESCALATE]
@@ -181,6 +198,12 @@ actions:
 **Status Update**: [Date/time] - Changed status to `approved`
 
 # Changelog
+
+## [2025-12-03 16:00] - Coordinator
+- Updated ticket for Go implementation (was Python)
+- Rationale: Fast startup (~1ms vs ~100ms), single binary, no dependencies
+- Updated directory structure for Go project layout
+- Updated acceptance criteria and validation steps
 
 ## [2025-12-03 14:30] - Coordinator
 - Ticket created from hook engine analysis
