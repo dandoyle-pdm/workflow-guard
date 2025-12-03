@@ -202,7 +202,7 @@ None - implementation matches specification and all tests pass.
 - `engine/test-event-allowed.json` - Test event (allowed)
 
 **Commits:**
-[To be added after commit]
+- 4bde16b - feat: implement Go declarative hook engine
 
 **Status Update**: 2025-12-03 - Implementation complete, ready for critic_review
 
