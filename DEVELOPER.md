@@ -270,18 +270,68 @@ grep "ERROR: Failed to parse" ~/.claude/logs/hooks-debug.log
 
 ## Contribution Workflow
 
-ALL work products require quality cycles. Select based on artifact type:
+**workflow-guard is a Claude Code plugin. ALL work uses the Plugin recipe.**
 
-### Quality Cycle Matrix
+### Primary Quality Cycle
+
+**Plugin recipe is PRIMARY** for all workflow-guard resources:
+
+| Recipe | Cycle | Focus Areas |
+|--------|-------|-------------|
+| **Plugin** | plugin-engineer → plugin-reviewer → plugin-tester | Logic, Design, Security, Compatibility |
+
+### Plugin Resources (use Plugin recipe)
+
+All workflow-guard components integrate with Claude Code's hook system:
+
+| Resource Type | Examples | Why Plugin Recipe |
+|--------------|----------|-------------------|
+| **Hooks** | hooks/*.sh, hooks.json | Hook exit codes, JSON parsing, fail-safe behavior |
+| **Commands** | commands/*.md | Slash command frontmatter, prompt template structure |
+| **Engine** | engine/*.go, engine/*.yaml | Hook dispatcher, rule/condition definitions, JSON input format |
+| **Plugin Config** | .claude-plugin/plugin.json | Plugin manifest, hook matchers |
+| **Developer Docs** | DEVELOPER.md, README.md | Plugin development patterns, hook lifecycle |
+
+### Plugin Recipe Focus Areas
+
+**plugin-engineer (Creator)** reviews for:
+- **Logic**: Does the hook/rule/command do what it claims?
+  - Example: "Does block-main-commits correctly detect `git commit` commands?"
+- **Design**: Is this the right approach for Claude Code's architecture?
+  - Example: "Should we use exit 2 (block) or exit 0 (allow) for this scenario?"
+- **Patterns**: Does it follow established plugin patterns?
+  - Example: "Are we using `printf` instead of `echo` to prevent injection?"
+
+**plugin-reviewer (Critic)** reviews for:
+- **Security**: Fail-safe behavior, injection prevention
+  - Example: "What happens if user controls the cwd variable?"
+- **Compatibility**: Works with Claude Code hook system
+  - Example: "Does this handle malformed JSON gracefully?"
+- **Edge Cases**: Handles unexpected input
+  - Example: "What if CLAUDE_HOME isn't set?"
+
+**plugin-tester (Expediter)** verifies:
+- **Integration**: Works in real Claude Code environment
+  - Example: "Does the hook actually block commits to main?"
+- **Restart Verification**: Changes take effect after restart
+  - Example: "After modifying the hook, did restart pick up changes?"
+- **Exit Code Semantics**: 0/2 behave correctly
+  - Example: "Does exit 2 show the error message to Claude?"
+
+**NOT generic code review** - focus is on Claude Code plugin integration, not just code quality.
+
+### Other Recipes (when NOT plugin work)
+
+Use these recipes only for work that doesn't integrate with Claude Code:
 
 | Recipe | Artifact Type | Cycle | When |
 |--------|--------------|-------|------|
-| **R1** | Production code | code-developer → code-reviewer → code-tester | Any .go, .py, .sh, .js, .ts changes |
-| **R2** | Documentation (100+ lines) | tech-writer → tech-editor → tech-publisher | README, DEVELOPER, guides |
-| **R3** | Handoff prompts | tech-editor (quick check) | commands/handoff*.md |
+| **R1** | Generic utilities | code-developer → code-reviewer → code-tester | Scripts with NO Claude Code integration |
+| **R2** | Documentation (100+ lines) | tech-writer → tech-editor → tech-publisher | Large narrative docs (consider tech-editor for plugin docs) |
+| **R3** | Handoff prompts | tech-editor (quick check) | Quick validation only |
 | **R4** | Read-only queries | None (fast path) | Research, exploration |
-| **R5** | Config/minor changes | Single reviewer | .yaml, .json, minor tweaks |
-| **Arch** | Architecture docs | architect → tech-editor | ARCHITECTURE.md, design docs |
+| **R5** | Config/minor changes | Single reviewer | Trivial tweaks (most config is Plugin recipe) |
+| **Arch** | Architecture docs | architect → tech-editor | System design decisions |
 | **Ticket** | Tickets | lite cycle (tech-editor) | tickets/queue/*.md |
 
 ### Document Types → Transformers
@@ -318,12 +368,19 @@ Ticket → tech-editor review → approved/needs-changes
 
 ### Agent Selection
 
+**For workflow-guard** (Claude Code plugin), use Plugin recipe:
+
 | Work Type | Primary Agent | Reviewer | Tester |
 |-----------|--------------|----------|--------|
-| Go/Python code | code-developer | code-reviewer | code-tester |
-| Plugin resources | plugin-engineer | plugin-reviewer | plugin-tester |
-| Technical docs | tech-writer | tech-editor | tech-publisher |
+| **Plugin resources** (hooks, commands, engine, config) | **plugin-engineer** | **plugin-reviewer** | **plugin-tester** |
+| Technical docs (narrative, guides) | tech-writer | tech-editor | tech-publisher |
 | Architecture | architect | tech-editor | - |
+
+**For generic utilities** (no Claude Code integration):
+
+| Work Type | Primary Agent | Reviewer | Tester |
+|-----------|--------------|----------|--------|
+| Generic scripts/code | code-developer | code-reviewer | code-tester |
 
 See `qc-router/recipes/` for full specifications.
 
