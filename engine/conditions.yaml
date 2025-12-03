@@ -133,10 +133,6 @@ conditions:
     pattern: '(_test\.go|test_.*\.py|\.test\.(js|ts|tsx)|\.spec\.(js|ts|tsx))$'
     description: "Matches test files"
 
-  # ===========================================================================
-  # FILE PATH PATTERNS
-  # ===========================================================================
-
   is-env-file:
     type: glob
     field: tool_input.file_path

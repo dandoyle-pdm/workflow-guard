@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -197,6 +198,11 @@ func renderTemplate(template string, event *conditions.HookEvent, params map[str
 			break
 		}
 	}
+
+	// Remove any remaining unreplaced template variables
+	// This handles cases where a variable doesn't exist in the context
+	re := regexp.MustCompile(`\{\{[^}]+\}\}`)
+	result = re.ReplaceAllString(result, "")
 
 	return result
 }
