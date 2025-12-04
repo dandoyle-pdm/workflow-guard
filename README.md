@@ -216,12 +216,46 @@ The plugin provides GitOps-style locking for ticket activation to prevent duplic
 2. **Push to Main**: Atomic lock - if push fails, another developer claimed it first
 3. **Worktree Phase**: Feature branch and worktree created for isolated development
 
-### Commands
+### Scripts
 
 | Script | Purpose |
 |--------|---------|
 | `scripts/activate-ticket.sh` | Activate a ticket with GitOps locking |
-| `scripts/complete-ticket.sh` | Mark ticket complete before PR (TODO) |
+| `scripts/complete-ticket.sh` | Mark ticket complete and prepare for PR |
+| `scripts/cleanup-merged-ticket.sh` | Remove worktree and branches after PR merge |
+
+### Script Usage
+
+#### activate-ticket.sh
+```bash
+# Activate a ticket from the queue
+scripts/activate-ticket.sh tickets/queue/TICKET-xxx-001.md [project-name]
+```
+
+Creates a worktree at `~/workspace/worktrees/{project}/{ticket-id}` and moves the ticket to `tickets/active/`.
+
+#### complete-ticket.sh
+```bash
+# In worktree - auto-detect ticket
+cd ~/workspace/worktrees/project/TICKET-xxx-001
+scripts/complete-ticket.sh
+
+# Explicit ticket path
+scripts/complete-ticket.sh tickets/active/TICKET-xxx-001/TICKET-xxx-001.md
+
+# Skip push (local only)
+scripts/complete-ticket.sh --no-push
+```
+
+Moves ticket from `tickets/active/` to `tickets/completed/`, updates status to approved, and commits the change.
+
+#### cleanup-merged-ticket.sh
+```bash
+# After PR is merged, cleanup worktree and branches
+scripts/cleanup-merged-ticket.sh ticket/TICKET-xxx-001
+```
+
+**Security:** Requires PR to be in MERGED state. Protected branches (main, master, production) are blocked.
 
 ### Why Main Commits Are Allowed for Tickets
 
@@ -242,19 +276,22 @@ The `block-main-commits.sh` hook has a surgical exception for ticket lifecycle f
 ## Workflow Overview
 
 ```
-1. Create worktree from main
-   git worktree add ~/workspace/worktrees/project/feature-branch -b feature-branch
+1. Activate ticket (creates worktree automatically)
+   scripts/activate-ticket.sh tickets/queue/TICKET-xxx-001.md
 
 2. Work in worktree (commits allowed)
-   cd ~/workspace/worktrees/project/feature-branch
+   cd ~/workspace/worktrees/project/TICKET-xxx-001
    # make changes
    git commit -m "..."
 
-3. Complete ticket before PR
-   ~/.claude/scripts/complete-ticket.sh
+3. Complete ticket (moves to completed/)
+   scripts/complete-ticket.sh
 
-4. Create PR (ticket completion verified)
+4. Create PR (ticket completion verified by hook)
    gh pr create --base main
+
+5. After PR merge, cleanup
+   scripts/cleanup-merged-ticket.sh ticket/TICKET-xxx-001
 ```
 
 ## License
