@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement complete-ticket.sh for ticket lifecycle completion
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-03 20:01
 created: 2025-12-03 22:15
@@ -90,16 +90,54 @@ Following patterns from activate-ticket.sh:
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+Successfully implemented `complete-ticket.sh` following all patterns from `activate-ticket.sh`:
+
+**Key Features:**
+- Auto-detection of ticket from current worktree (no path needed)
+- Worktree validation (prevents running in main repo)
+- Status update to 'approved'
+- Atomic move: active/{branch}/ → completed/{branch}/
+- Changelog entry with timestamp
+- Git commit: "complete: TICKET-xxx"
+- Optional push with --no-push flag
+- Comprehensive help text
+- Success banner with next steps (create PR)
+
+**Functions Implemented:**
+- `log_info`, `log_error`, `log_success` - Logging utilities
+- `get_main_repo_root` - Detect main repo vs worktree
+- `get_current_branch` - Extract current branch name
+- `is_worktree` - Safety check for worktree context
+- `find_active_ticket` - Auto-detect ticket in active/{branch}/
+- `validate_ticket` - Validate ticket path and format
+- `complete_ticket` - Main completion logic
+- `show_help` - Comprehensive help documentation
+
+**Edge Cases Handled:**
+- Not in worktree → Error with helpful message
+- No ticket found → Error with context
+- Multiple tickets in active/ → Error requiring explicit path
+- Invalid ticket format → Validation error
+- Empty active/ directory → Automatically cleaned up
+- Push failures → Graceful error with manual push instructions
+
+**Security:**
+- `set -euo pipefail` for strict error handling
+- Worktree validation before any file operations
+- Uses `git mv` for proper tracking
+- Validates ticket filename format
+- Sanitizes all user inputs
 
 ## Questions/Concerns
-[To be filled by plugin-engineer]
+None. Implementation is straightforward and follows established patterns.
 
 ## Changes Made
 - File changes:
+  - Created: scripts/complete-ticket.sh (307 lines, executable)
 - Commits:
+  - d6d2754: feat: implement complete-ticket.sh
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Status Update**: 2025-12-03 20:16 - Changed status to `critic_review`
 
 # Critic Section
 
