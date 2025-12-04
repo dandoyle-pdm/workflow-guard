@@ -12,7 +12,7 @@ set -euo pipefail
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORKTREE_BASE="${WORKTREE_BASE:-${HOME}/workspace/worktrees}"
+WORKTREE_BASE="${WORKTREE_BASE:-${HOME}/.novacloud/worktrees}"
 LOG_FILE="${HOME}/.claude/logs/cleanup-ticket.log"
 PROTECTED_BRANCHES="${CLAUDE_PROTECTED_BRANCHES:-main,master,production}"
 
