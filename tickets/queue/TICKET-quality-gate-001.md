@@ -19,7 +19,11 @@ Implement a PreToolUse hook that enforces quality transformer (agent) usage for 
 1. The operation is on a ticket or handoff file (workflow metadata)
 2. A quality agent (from qc-router) is detected in the transcript
 
-This ensures all code changes go through the quality cycle (plugin-engineer → plugin-reviewer → plugin-tester).
+This ensures all changes go through the appropriate quality cycle:
+- **Code**: code-developer → code-reviewer → code-tester
+- **Plugin**: plugin-engineer → plugin-reviewer → plugin-tester
+- **Prompt**: prompt-engineer → prompt-reviewer → prompt-tester
+- **Documentation**: tech-writer → tech-editor → tech-publisher
 
 ## Acceptance Criteria
 
@@ -63,12 +67,12 @@ The quality gate hook closes this gap by requiring a quality transformer (agent)
 ```
 workflow-guard (this plugin)          qc-router (sister plugin)
 ├── hooks/                            ├── agents/
-│   └── block-unreviewed-edits.sh     │   ├── plugin-engineer/AGENT.md
-│       │                             │   ├── plugin-reviewer/AGENT.md
-│       │ reads transcript            │   └── plugin-tester/AGENT.md
-│       │ greps for agent identity    │
-│       ▼                             │
-│   "plugin-engineer agent" ──────────┤ Identity marker in AGENT.md
+│   └── block-unreviewed-edits.sh     │   ├── code-developer/
+│       │                             │   ├── plugin-engineer/
+│       │ reads transcript            │   ├── prompt-engineer/
+│       │ greps for agent identity    │   ├── tech-writer/
+│       ▼                             │   └── ... (12 agents)
+│   "{agent-name} agent" ─────────────┤ Identity marker in AGENT.md
 │       │                             │
 │       └── ALLOW if found            └── Dispatched via Task tool
 ```
@@ -77,16 +81,24 @@ workflow-guard (this plugin)          qc-router (sister plugin)
 
 When a quality agent is dispatched via Task tool, the AGENT.md content (including identity marker) appears in the subagent's transcript.
 
-**Pattern to detect:**
-```
-"working as the plugin-engineer agent"
-"working as the plugin-reviewer agent"
-"working as the plugin-tester agent"
-```
+**Pattern to detect:** `working as the {agent-name} agent`
+
+**All 12 recognized quality agents:**
+| Cycle | Agents |
+|-------|--------|
+| Code | code-developer, code-reviewer, code-tester |
+| Plugin | plugin-engineer, plugin-reviewer, plugin-tester |
+| Prompt | prompt-engineer, prompt-reviewer, prompt-tester |
+| Documentation | tech-writer, tech-editor, tech-publisher |
 
 **Grep pattern:**
 ```bash
-grep -qE "plugin-engineer agent|plugin-reviewer agent|plugin-tester agent" "$transcript_path"
+QUALITY_AGENTS="code-developer|code-reviewer|code-tester"
+QUALITY_AGENTS+="|plugin-engineer|plugin-reviewer|plugin-tester"
+QUALITY_AGENTS+="|prompt-engineer|prompt-reviewer|prompt-tester"
+QUALITY_AGENTS+="|tech-writer|tech-editor|tech-publisher"
+
+grep -qE "${QUALITY_AGENTS}" "$transcript_path"
 ```
 
 ## Declarative Hook Loading
@@ -174,7 +186,8 @@ See: ~/.claude/plugins/qc-router/agents/
 
 ## Environment Variables
 
-- `QUALITY_AGENTS`: Comma-separated list of recognized agents (default: plugin-engineer,plugin-reviewer,plugin-tester)
+- `QUALITY_AGENTS`: Comma-separated list of recognized agents. Default includes all 12 qc-router agents:
+  `code-developer,code-reviewer,code-tester,plugin-engineer,plugin-reviewer,plugin-tester,prompt-engineer,prompt-reviewer,prompt-tester,tech-writer,tech-editor,tech-publisher`
 
 # Creator Section
 
