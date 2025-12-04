@@ -206,6 +206,39 @@ For MCP tools, additional fields may include:
 - Logs use JSON Lines format (one JSON object per line) for easy parsing
 - Clear logs periodically as they can grow large with extensive tool use
 
+## Ticket Activation
+
+The plugin provides GitOps-style locking for ticket activation to prevent duplicate work.
+
+### How It Works
+
+1. **Claim Phase**: Ticket moves from `queue/` to `active/` on main branch
+2. **Push to Main**: Atomic lock - if push fails, another developer claimed it first
+3. **Worktree Phase**: Feature branch and worktree created for isolated development
+
+### Commands
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/activate-ticket.sh` | Activate a ticket with GitOps locking |
+| `scripts/complete-ticket.sh` | Mark ticket complete before PR (TODO) |
+
+### Why Main Commits Are Allowed for Tickets
+
+The `block-main-commits.sh` hook has a surgical exception for ticket lifecycle files:
+- Moving tickets between `queue/`, `active/`, `completed/`, `archive/` is allowed
+- This is workflow metadata, not code
+- Code changes still require feature branch + PR
+
+### Ticket Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `tickets/queue/` | Tickets waiting to be claimed |
+| `tickets/active/{branch}/` | Tickets being actively worked |
+| `tickets/completed/{branch}/` | Tickets ready for PR |
+| `tickets/archive/` | Obsolete/superseded tickets |
+
 ## Workflow Overview
 
 ```
