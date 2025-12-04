@@ -94,6 +94,17 @@ Ensures ticket is in `tickets/completed/` before PR creation.
 
 ## Configuration
 
+### Worktree Location
+
+Default worktree base: `~/.novacloud/worktrees`
+
+Override with environment variable:
+```bash
+export WORKTREE_BASE="~/my-worktrees"
+```
+
+Worktrees are created at `$WORKTREE_BASE/{project}/{ticket-id}`.
+
 ### Protected Branches
 
 Default protected branches: `main`, `master`, `production`
@@ -232,12 +243,12 @@ The plugin provides GitOps-style locking for ticket activation to prevent duplic
 scripts/activate-ticket.sh tickets/queue/TICKET-xxx-001.md [project-name]
 ```
 
-Creates a worktree at `~/workspace/worktrees/{project}/{ticket-id}` and moves the ticket to `tickets/active/`.
+Creates a worktree at `$WORKTREE_BASE/{project}/{ticket-id}` and moves the ticket to `tickets/active/`.
 
 #### complete-ticket.sh
 ```bash
 # In worktree - auto-detect ticket
-cd ~/workspace/worktrees/project/TICKET-xxx-001
+cd $WORKTREE_BASE/project/TICKET-xxx-001
 scripts/complete-ticket.sh
 
 # Explicit ticket path
@@ -280,7 +291,7 @@ The `block-main-commits.sh` hook has a surgical exception for ticket lifecycle f
    scripts/activate-ticket.sh tickets/queue/TICKET-xxx-001.md
 
 2. Work in worktree (commits allowed)
-   cd ~/workspace/worktrees/project/TICKET-xxx-001
+   cd $WORKTREE_BASE/project/TICKET-xxx-001
    # make changes
    git commit -m "..."
 

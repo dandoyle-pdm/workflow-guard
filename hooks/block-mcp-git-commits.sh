@@ -93,10 +93,10 @@ Direct git operations on protected branches are not allowed.
 --------------------------------------------------------------------------------
 
 1. Create a worktree for your work:
-   git worktree add ~/workspace/worktrees/<project>/<branch-name> -b <branch-name>
+   git worktree add \$WORKTREE_BASE/<project>/<branch-name> -b <branch-name>
 
 2. Navigate to the worktree and make your changes:
-   cd ~/workspace/worktrees/<project>/<branch-name>
+   cd \$WORKTREE_BASE/<project>/<branch-name>
    # ... make changes, commit freely ...
 
 3. Push and create a Pull Request:
@@ -104,7 +104,7 @@ Direct git operations on protected branches are not allowed.
    gh pr create --base ${current_branch}
 
 Alternatively, use the activate-ticket.sh script:
-   ~/.claude/scripts/activate-ticket.sh tickets/queue/TICKET-xxx.md
+   scripts/activate-ticket.sh tickets/queue/TICKET-xxx.md
 
 --------------------------------------------------------------------------------
   WHY THIS MATTERS

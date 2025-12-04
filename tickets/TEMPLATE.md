@@ -3,7 +3,7 @@ TICKET LIFECYCLE
 
 1. Create ticket in tickets/queue/
 2. Activate: ./scripts/activate-ticket.sh tickets/queue/TICKET-xxx.md
-   - Creates worktree at ~/workspace/worktrees/<project>/<branch>
+   - Creates worktree at $WORKTREE_BASE/<project>/<branch>
    - Moves ticket to tickets/active/<branch>/ in worktree
    - Sets status to in_progress
 

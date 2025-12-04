@@ -38,9 +38,9 @@ If another developer claims the ticket first:
 Navigate to the worktree and begin development:
 
 ```bash
-cd ~/workspace/worktrees/{project}/{ticket-id}
+cd $WORKTREE_BASE/{project}/{ticket-id}
 ```
 
 Use Plugin recipe agents (plugin-engineer, plugin-reviewer, plugin-tester) for implementation.
 
-When complete, run `complete-ticket.sh` (TODO: implement).
+When complete, run `scripts/complete-ticket.sh`.

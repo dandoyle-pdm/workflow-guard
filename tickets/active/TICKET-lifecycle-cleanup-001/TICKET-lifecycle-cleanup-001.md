@@ -88,7 +88,7 @@ Following patterns from activate-ticket.sh:
 - Protected branch name → Immediate abort
 
 ## Environment Variables
-- `WORKTREE_BASE` - Base path for worktrees (default: ~/workspace/worktrees)
+- `WORKTREE_BASE` - Base path for worktrees (default: ~/.novacloud/worktrees)
 - `CLAUDE_PROTECTED_BRANCHES` - Comma-separated protected branches (default: main,master,production)
 
 # Creator Section
