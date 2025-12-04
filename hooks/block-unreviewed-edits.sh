@@ -50,9 +50,26 @@ is_workflow_metadata() {
     local filename
     filename=$(basename "$file_path")
 
-    # Check if file is in tickets directory
-    if [[ "$file_path" =~ ^.*tickets/.* ]]; then
-        debug_log "Workflow metadata: ticket file ($file_path)"
+    # Canonicalize path to resolve any traversal sequences
+    local canonical_path
+    if [[ -e "$file_path" ]]; then
+        canonical_path=$(realpath "$file_path" 2>/dev/null || echo "$file_path")
+    else
+        # For new files, canonicalize the directory portion
+        local dir_path
+        dir_path=$(dirname "$file_path")
+        if [[ -d "$dir_path" ]]; then
+            canonical_path="$(realpath "$dir_path" 2>/dev/null)/${filename}"
+        else
+            canonical_path="$file_path"
+        fi
+    fi
+
+    debug_log "Canonical path: ${canonical_path}"
+
+    # Check if canonical path contains /tickets/ as a proper directory component
+    if [[ "$canonical_path" =~ (^|/)tickets/ ]] && [[ "$filename" =~ ^TICKET-.*\.md$ ]]; then
+        debug_log "Workflow metadata: ticket file ($canonical_path)"
         return 0
     fi
 
@@ -74,6 +91,12 @@ has_quality_agent_context() {
     if [[ ! -f "$transcript_path" ]]; then
         debug_log "WARNING: Transcript file not found: $transcript_path"
         return 1
+    fi
+
+    # Validate QUALITY_AGENTS contains only safe characters (alphanumeric, comma, hyphen, underscore)
+    if [[ ! "${QUALITY_AGENTS}" =~ ^[a-zA-Z0-9,_-]+$ ]]; then
+        debug_log "ERROR: Invalid QUALITY_AGENTS format, blocking operation"
+        exit 2  # Block on invalid configuration - fail-secure
     fi
 
     # Convert comma-separated list to pipe-separated for grep regex
