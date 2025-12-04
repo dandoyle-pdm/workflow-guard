@@ -47,7 +47,7 @@ Each handoff command automatically:
 
 ### Hooks
 
-Three PreToolUse hooks intercept Bash commands to enforce workflow discipline:
+Four PreToolUse hooks enforce workflow discipline and quality cycles:
 
 #### block-main-commits
 
@@ -92,6 +92,24 @@ Ensures ticket is in `tickets/completed/` before PR creation.
 - Blocks if ticket is still in `tickets/active/`
 - Allows non-ticket work to proceed (no ticket found = warning only)
 
+#### block-unreviewed-edits
+
+Enforces quality agent context for file modifications (Edit, Write, NotebookEdit).
+
+**Behavior:**
+- Blocks file modifications unless quality agent context detected
+- Detects agent identity in transcript via pattern: `working as the {agent-name} agent`
+- Allows workflow metadata: `tickets/**/*.md`, `**/HANDOFF*.md`
+- Provides guidance on using qc-router to dispatch quality agents
+- Audit logging for compliance tracking
+
+**Exception files (always allowed):**
+- Ticket files: Any markdown file in `tickets/` directory
+- Handoff files: Any file matching `HANDOFF*.md`
+
+**Quality agent detection:**
+The hook reads the transcript JSONL file to detect if a quality agent from qc-router is active. When you dispatch a quality agent via the Task tool, the agent's identity marker appears in the transcript, allowing the hook to verify proper quality cycle context.
+
 ## Configuration
 
 ### Worktree Location
@@ -112,6 +130,19 @@ Default protected branches: `main`, `master`, `production`
 Override with environment variable:
 ```bash
 export CLAUDE_PROTECTED_BRANCHES="main production staging develop"
+```
+
+### Quality Agents
+
+Default quality agents (12 total across 4 quality cycles):
+- Code: `code-developer`, `code-reviewer`, `code-tester`
+- Plugin: `plugin-engineer`, `plugin-reviewer`, `plugin-tester`
+- Prompt: `prompt-engineer`, `prompt-reviewer`, `prompt-tester`
+- Documentation: `tech-writer`, `tech-editor`, `tech-publisher`
+
+Override with environment variable (comma-separated):
+```bash
+export CLAUDE_QUALITY_AGENTS="code-developer,code-reviewer,code-tester,custom-agent"
 ```
 
 ### Debug Logging
@@ -247,18 +278,26 @@ When a quality agent is dispatched via Task tool, its AGENT.md identity appears 
 - `plugin-reviewer` - Critic role, audits code
 - `plugin-tester` - Judge role, validates and approves
 
-### Quality Transformer Requirement (Planned)
+### Quality Transformer Requirement
 
-The `block-unreviewed-edits.sh` hook (in development) will enforce quality cycle for file modifications:
+The `block-unreviewed-edits.sh` hook enforces quality cycle for file modifications:
 
 | Operation | Without Quality Agent | With Quality Agent |
 |-----------|----------------------|-------------------|
 | Edit file | BLOCKED | Allowed |
 | Write file | BLOCKED | Allowed |
+| NotebookEdit | BLOCKED | Allowed |
 | Edit ticket | Allowed (exception) | Allowed |
 | Edit handoff | Allowed (exception) | Allowed |
 
 This ensures all code changes go through the quality cycle: Creator → Critic → Judge.
+
+**How it works:**
+1. Hook intercepts Edit/Write/NotebookEdit tool invocations
+2. Checks if file is workflow metadata (tickets, handoffs) - if yes, ALLOW
+3. Reads transcript JSONL file to detect quality agent identity marker
+4. If quality agent detected (any of 12 recognized agents), ALLOW
+5. Otherwise, BLOCK with guidance on using qc-router
 
 ## Declarative Hook Configuration
 
@@ -275,6 +314,11 @@ Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this
         {
           "type": "command",
           "command": "hooks/block-main-commits.sh",
+          "timeout": 10
+        },
+        {
+          "type": "command",
+          "command": "hooks/enforce-pr-workflow.sh",
           "timeout": 10
         }
       ]
