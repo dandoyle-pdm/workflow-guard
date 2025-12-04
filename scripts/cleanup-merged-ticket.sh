@@ -39,10 +39,15 @@ is_protected_branch() {
     # Strip ticket/ prefix if present for comparison
     local branch_base="${branch#ticket/}"
 
+    # Normalize to lowercase for case-insensitive comparison
+    local branch_lower="${branch,,}"
+    local branch_base_lower="${branch_base,,}"
+
     IFS=',' read -ra PROTECTED <<< "$protected_list"
     for protected in "${PROTECTED[@]}"; do
         protected=$(echo "$protected" | xargs)  # trim whitespace
-        if [[ "$branch" == "$protected" ]] || [[ "$branch_base" == "$protected" ]]; then
+        local protected_lower="${protected,,}"
+        if [[ "$branch_lower" == "$protected_lower" ]] || [[ "$branch_base_lower" == "$protected_lower" ]]; then
             return 0
         fi
     done
