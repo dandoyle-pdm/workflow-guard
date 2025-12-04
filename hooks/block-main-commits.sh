@@ -36,6 +36,28 @@ debug_log() {
     printf '[%s] [block-main-commits] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "${DEBUG_LOG}" 2>/dev/null || true
 }
 
+# Check if staged changes are ticket lifecycle only
+# Returns 0 if ONLY ticket files modified, 1 otherwise
+is_ticket_lifecycle_only() {
+    local staged_files
+    staged_files=$(git diff --cached --name-only 2>/dev/null)
+
+    # If no staged files, not a ticket lifecycle commit
+    [[ -z "$staged_files" ]] && return 1
+
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        # Allow: tickets/queue/*, tickets/active/*, tickets/completed/*, tickets/archive/*
+        if [[ ! "$file" =~ ^tickets/(queue|active|completed|archive)/ ]]; then
+            debug_log "Non-ticket file staged: $file"
+            return 1
+        fi
+    done <<< "$staged_files"
+
+    debug_log "Ticket lifecycle commit detected (all files in tickets/)"
+    return 0
+}
+
 # Check if a branch name is protected
 is_protected_branch() {
     local branch="$1"
@@ -203,6 +225,13 @@ main() {
 
     # Check if on protected branch
     if is_protected_branch "${current_branch}"; then
+        # Exception: Allow ticket lifecycle commits on protected branches
+        if is_ticket_lifecycle_only; then
+            debug_log "ALLOWED: Ticket lifecycle commit on protected branch"
+            debug_log "AUDIT: Ticket lifecycle commit - branch=${current_branch}, files=$(git diff --cached --name-only 2>/dev/null | tr '\n' ' ')"
+            exit 0
+        fi
+
         # Block the commit
         generate_error_message "${current_branch}" "${command}" >&2
 
