@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement quality transformer gate hook for file modifications
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-03 22:19
 created: 2025-12-03 22:10
@@ -194,16 +194,50 @@ See: ~/.claude/plugins/qc-router/agents/
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+Implemented quality gate enforcement hook following patterns from block-main-commits.sh.
+
+**Key design decisions:**
+
+1. **Transcript identity detection**: Used grep pattern matching on transcript JSONL file to detect quality agent identity markers. Pattern: `working as the {agent-name} agent` catches all 12 quality transformers from qc-router.
+
+2. **Dual path parsing**: Implemented both jq (preferred) and sed fallback (portable) for JSON parsing, following security hardening patterns from reference implementation.
+
+3. **File path extraction**: Handles both `file_path` (Edit/Write) and `notebook_path` (NotebookEdit) from tool_input to support all three target tools.
+
+4. **Workflow metadata exceptions**: Two exception patterns:
+   - `tickets/**/*.md` - Any markdown in tickets directory (queue, active, completed, archive)
+   - `**/HANDOFF*.md` - Any handoff file regardless of location
+
+5. **Configuration via environment**: `CLAUDE_QUALITY_AGENTS` allows extending recognized agents beyond default 12, following same pattern as `CLAUDE_PROTECTED_BRANCHES`.
+
+6. **Audit logging**: All ALLOW/BLOCK decisions logged to ~/.claude/logs/hooks-debug.log with relevant context (file path, tool name, detected agent).
+
+7. **Helpful error messages**: Block message provides clear guidance on using qc-router, lists agent categories, and explains why quality cycles matter.
 
 ## Questions/Concerns
-[To be filled by plugin-engineer]
+
+None. Implementation is straightforward and follows established patterns from existing hooks.
 
 ## Changes Made
-- File changes:
-- Commits:
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Files created:**
+- `hooks/block-unreviewed-edits.sh` - Quality agent enforcement hook (240 lines)
+
+**Files modified:**
+- `hooks/hooks.json` - Added hook entry for Edit|Write|NotebookEdit matcher
+- `README.md` - Comprehensive documentation updates:
+  - Updated hooks count (Three → Four)
+  - Added block-unreviewed-edits hook description
+  - Added CLAUDE_QUALITY_AGENTS configuration section
+  - Updated Quality Transformer Requirement (Planned → Implemented)
+  - Enhanced declarative hook configuration examples
+
+**Commits:**
+- d73fea3 - feat(hooks): add quality agent enforcement for file edits
+- 2f4dc22 - docs: integrate quality gate hook into configuration and documentation
+
+**Status Update**: 2025-12-03 22:35 - Changed status to `critic_review`
 
 # Critic Section
 
