@@ -101,9 +101,9 @@ phase1_claim() {
 
         local active_ticket="tickets/active/${branch_dir}/$(basename "$ticket_path")"
         local timestamp
-        timestamp=$(date '+%Y-%m-%d %H:%M')
+        timestamp=$(date '+%Y-%m-%d %H:%M' | tr -d '\n\r')
         local user
-        user=$(whoami)
+        user=$(whoami | tr -d '\n\r')
 
         sed -i "s/^status:.*/status: claimed/" "$active_ticket"
 
@@ -166,7 +166,11 @@ phase2_activate() {
     active_ticket=$(find "tickets/active/${branch_dir}" -name "TICKET-*.md" 2>/dev/null | head -1)
 
     if [[ -n "$active_ticket" && -f "$active_ticket" ]]; then
-        sed -i "s|^worktree_path:.*|worktree_path: ${worktree_path}|" "$active_ticket"
+        # Sanitize variables for sed safety
+        local safe_worktree_path
+        safe_worktree_path=$(printf '%s' "$worktree_path" | tr -d '\n\r')
+
+        sed -i "s|^worktree_path:.*|worktree_path: ${safe_worktree_path}|" "$active_ticket"
         sed -i "s/^status:.*/status: in_progress/" "$active_ticket"
 
         printf '\n## [%s] - Activated\n- Worktree: %s\n- Branch: %s\n' \

@@ -47,14 +47,25 @@ is_ticket_lifecycle_only() {
 
     while IFS= read -r file; do
         [[ -z "$file" ]] && continue
-        # Allow: tickets/queue/*, tickets/active/*, tickets/completed/*, tickets/archive/*
+
+        # Must be in ticket workflow directories
         if [[ ! "$file" =~ ^tickets/(queue|active|completed|archive)/ ]]; then
-            debug_log "Non-ticket file staged: $file"
+            debug_log "Non-ticket directory: $file"
+            return 1
+        fi
+
+        # Extract filename from path
+        local filename
+        filename=$(basename "$file")
+
+        # Must be a ticket or handoff markdown file
+        if [[ ! "$filename" =~ ^(TICKET|HANDOFF)-[a-zA-Z0-9-]+\.md$ ]]; then
+            debug_log "Invalid ticket filename: $filename (must be TICKET-*.md or HANDOFF-*.md)"
             return 1
         fi
     done <<< "$staged_files"
 
-    debug_log "Ticket lifecycle commit detected (all files in tickets/)"
+    debug_log "Ticket lifecycle commit validated (all files are valid ticket files)"
     return 0
 }
 
