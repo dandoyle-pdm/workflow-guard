@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement cleanup-merged-ticket.sh for post-merge cleanup
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-03 20:22
 created: 2025-12-03 22:20
@@ -94,16 +94,49 @@ Following patterns from activate-ticket.sh:
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+Implemented `cleanup-merged-ticket.sh` following all patterns from `activate-ticket.sh`:
+
+**Core Features Implemented:**
+- Branch name argument validation with help text
+- Protected branch rejection (main, master, production)
+- PR merge verification via gh CLI (checks state=MERGED and mergedAt)
+- Worktree discovery and safe removal
+- Local branch deletion with `git branch -d` (fails on unmerged changes)
+- Remote branch deletion via `git push origin --delete`
+- Worktree pruning for stale references
+- Detailed cleanup summary
+
+**Security Measures:**
+- `is_protected_branch()` function blocks cleanup of protected branches
+- `verify_pr_merged()` requires PR state=MERGED (not just closed)
+- Path validation: worktree must be under WORKTREE_BASE
+- Uses `git branch -d` (not `-D`) to prevent deleting unmerged work
+- All destructive operations logged to ~/.claude/logs/cleanup-ticket.log
+
+**Error Handling:**
+- Graceful handling when worktree/branches don't exist (skip, continue)
+- Clear error messages for PR not found, not merged, or closed
+- gh CLI authentication check
+- Git repository validation
+
+**Code Quality:**
+- Follows activate-ticket.sh patterns (logging functions, get_main_repo_root)
+- `set -euo pipefail` for strict error handling
+- Comprehensive help text with examples
+- Environment variable support (WORKTREE_BASE, CLAUDE_PROTECTED_BRANCHES)
 
 ## Questions/Concerns
-[To be filled by plugin-engineer]
+
+None - implementation is straightforward following existing patterns.
 
 ## Changes Made
 - File changes:
+  - Created `scripts/cleanup-merged-ticket.sh` (330 lines, executable)
 - Commits:
+  - c63a082 - feat: implement cleanup-merged-ticket.sh
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Status Update**: [2025-12-03 22:30] - Changed status to `critic_review`
 
 # Critic Section
 
