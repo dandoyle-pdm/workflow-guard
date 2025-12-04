@@ -239,6 +239,29 @@ None. Implementation is straightforward and follows established patterns from ex
 
 **Status Update**: 2025-12-03 22:35 - Changed status to `critic_review`
 
+**Security Fixes Applied**: 2025-12-03 23:50
+
+Following plugin-reviewer findings, implemented two critical security patches:
+
+1. **Regex Injection Prevention (CRITICAL)**
+   - Added input validation for `QUALITY_AGENTS` environment variable
+   - Validates format: `^[a-zA-Z0-9,_-]+$` (alphanumeric, comma, hyphen, underscore only)
+   - Blocks operation with `exit 2` if validation fails (fail-secure)
+   - Location: `has_quality_agent_context()` function before grep usage
+   - Prevents bypass attacks like `CLAUDE_QUALITY_AGENTS=".*"`
+
+2. **Path Traversal Prevention (HIGH)**
+   - Added path canonicalization using `realpath` before directory checks
+   - Handles both existing files and new files (canonicalizes directory portion)
+   - Verifies canonical path contains `/tickets/` as proper directory component
+   - Location: `is_workflow_metadata()` function
+   - Prevents bypass via paths like `/project/tickets/../../../../etc/shadow`
+
+**Commit:**
+- bc96a5a - fix(security): patch regex injection and path traversal vulnerabilities
+
+Both fixes follow fail-secure principle: block on invalid input rather than allow.
+
 # Critic Section
 
 ## Audit Findings
