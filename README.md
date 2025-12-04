@@ -217,6 +217,115 @@ For MCP tools, additional fields may include:
 - Logs use JSON Lines format (one JSON object per line) for easy parsing
 - Clear logs periodically as they can grow large with extensive tool use
 
+## Integration with qc-router
+
+workflow-guard integrates with the [qc-router](~/.claude/plugins/qc-router/) sister plugin to enforce quality cycle requirements.
+
+### Architecture
+
+```
+workflow-guard                        qc-router
+├── hooks/                            ├── agents/
+│   ├── block-main-commits.sh         │   ├── plugin-engineer/AGENT.md
+│   ├── enforce-pr-workflow.sh        │   ├── plugin-reviewer/AGENT.md
+│   └── block-unreviewed-edits.sh     │   └── plugin-tester/AGENT.md
+│       │                             │
+│       │ reads transcript            │
+│       │ detects agent identity      │
+│       ▼                             │
+│   ALLOW if quality agent found ─────┘
+```
+
+### Quality Agent Detection
+
+When a quality agent is dispatched via Task tool, its AGENT.md identity appears in the subagent's transcript. workflow-guard hooks read this transcript to detect quality agent context.
+
+**Identity pattern:** `working as the {agent-name} agent`
+
+**Recognized agents:**
+- `plugin-engineer` - Creator role, implements features
+- `plugin-reviewer` - Critic role, audits code
+- `plugin-tester` - Judge role, validates and approves
+
+### Quality Transformer Requirement (Planned)
+
+The `block-unreviewed-edits.sh` hook (in development) will enforce quality cycle for file modifications:
+
+| Operation | Without Quality Agent | With Quality Agent |
+|-----------|----------------------|-------------------|
+| Edit file | BLOCKED | Allowed |
+| Write file | BLOCKED | Allowed |
+| Edit ticket | Allowed (exception) | Allowed |
+| Edit handoff | Allowed (exception) | Allowed |
+
+This ensures all code changes go through the quality cycle: Creator → Critic → Judge.
+
+## Declarative Hook Configuration
+
+Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this configuration at session start.
+
+### hooks.json Structure
+
+```json
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-main-commits.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|Write|NotebookEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-unreviewed-edits.sh",
+          "timeout": 5
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Configuration Fields
+
+| Field | Description |
+|-------|-------------|
+| `PreToolUse` | Event type - fires before tool execution |
+| `matcher` | Regex pattern matching tool names |
+| `type` | Hook type - `command` for shell scripts |
+| `command` | Path to script (relative to plugin root) |
+| `timeout` | Max execution time in seconds |
+
+### Hook Input/Output Protocol
+
+**Input:** JSON via stdin
+```json
+{
+  "tool_name": "Edit",
+  "tool_input": { "file_path": "...", "old_string": "...", "new_string": "..." },
+  "transcript_path": "/path/to/transcript.jsonl",
+  "cwd": "/current/directory",
+  "session_id": "..."
+}
+```
+
+**Output:** Exit code determines action
+- `exit 0` - Allow operation
+- `exit 2` - Block with message (stdout = guidance)
+
+### Adding New Hooks
+
+1. Create script in `hooks/` directory
+2. Add entry to `hooks/hooks.json`
+3. Restart Claude Code (hooks load at session start)
+
 ## Ticket Activation
 
 The plugin provides GitOps-style locking for ticket activation to prevent duplicate work.
