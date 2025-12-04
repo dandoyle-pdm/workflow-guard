@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement ticket activation with GitOps locking
 cycle_type: development
-status: open
+status: creator_review
 created: 2025-12-03 19:30
 worktree_path: null
 ---
@@ -166,21 +166,70 @@ None - design is solid and implementation follows spec exactly.
 ## Audit Findings
 
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description and fix required
+- [x] `hooks/block-main-commits.sh:51` - **SECURITY BYPASS**: Regex `^tickets/(queue|active|completed|archive)/` matches ANY file extension, not just `.md` files. An attacker could commit code as `tickets/queue/exploit.go` and bypass the hook entirely.
+  - **Fix Required**: Add filename validation to ensure only `TICKET-*.md` files are allowed
+  - **Test Evidence**: Staged `tickets/queue/exploit.go` and it matched the regex pattern
+  - **Impact**: Complete bypass of main branch protection for code commits
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description and fix required
+- [x] `scripts/activate-ticket.sh:108,111,114,169,170` - **Potential sed injection**: Variables `$user`, `$timestamp`, and `$worktree_path` are used in sed commands without sanitization. If `whoami` returns a username with embedded newlines (e.g., `alice\nmalicious: hacked`), it could inject arbitrary YAML metadata.
+  - **Fix Recommended**: Sanitize user input by removing/escaping newlines before sed
+  - **Test Evidence**: `sed -i "/^status:/a claimed_by: alice\nmalicious: hacked"` successfully injected YAML field
+  - **Risk Level**: LOW in practice (requires malicious username on system), but violates secure coding principles
+  - **Likelihood**: Very low - most systems prevent newlines in usernames
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion for improvement
+- [x] `scripts/activate-ticket.sh:14` - Unused variable `SCRIPT_DIR` (shellcheck SC2034)
+  - **Impact**: None - just dead code
+  - **Fix**: Remove or mark as intentionally unused
+- [x] `scripts/activate-ticket.sh:102` - Shellcheck SC2155: Declare and assign separately to avoid masking return values
+  - **Impact**: Low - could hide errors from `basename` command
+  - **Fix**: Split into two statements
+- [x] `hooks/block-main-commits.sh:231` - Audit logging calls `git diff --cached --name-only` every time a ticket commit is allowed
+  - **Impact**: Minor performance overhead
+  - **Fix**: Cache the result from `is_ticket_lifecycle_only()` check
+
+### POSITIVE Findings
+- [x] **Command injection resistant**: Git commit messages with `${ticket_id}` are safe - git treats entire string as literal message
+- [x] **Cleanup logic correct**: Trap is properly set/cleared, stash is restored on failure
+- [x] **Retry logic sound**: Max 3 attempts with 1-second delay, proper conflict detection
+- [x] **Race condition handled**: Checks ticket still exists in queue/ after pull before each retry
+- [x] **Audit logging present**: All ticket lifecycle commits are logged with branch and file list
+- [x] **Protected branch detection**: Properly handles origin/ prefix and space-separated list
+- [x] **Path traversal blocked**: Git refuses to stage files outside repo (e.g., `../../../etc/passwd`)
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+**NEEDS_CHANGES** - Critical security bypass must be fixed before merge
 
 ## Rationale
-[Why this decision]
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+The ticket lifecycle exception has a **critical security flaw** that completely defeats the purpose of the main branch protection hook. Any file placed in `tickets/queue/`, `tickets/active/`, `tickets/completed/`, or `tickets/archive/` will bypass the commit block, regardless of file extension or content.
+
+**Attack Scenario:**
+```bash
+# Attacker commits code directly to main
+mkdir -p tickets/queue
+echo "package main; func main() { os.RemoveAll(\"/\") }" > tickets/queue/exploit.go
+git add tickets/queue/exploit.go
+git commit -m "malicious code"  # ALLOWED by hook!
+git push origin main
+```
+
+**Required Fix:**
+The `is_ticket_lifecycle_only()` function must validate that files match the pattern `TICKET-*.md`, not just the directory path.
+
+**Additional Recommendations:**
+1. Address sed injection by sanitizing user input (low priority - unlikely attack vector)
+2. Clean up shellcheck warnings (cosmetic)
+3. Cache git diff results in audit logging (optimization)
+
+The implementation is otherwise solid:
+- Atomic locking mechanism works correctly
+- Cleanup and error handling are robust
+- Documentation is comprehensive
+- No command injection vulnerabilities in git commands
+
+**Status Update**: 2025-12-03 20:45 - Changed status to `creator_review` (return to creator for fix)
 
 # Expediter Section
 
