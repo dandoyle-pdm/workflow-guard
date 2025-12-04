@@ -244,21 +244,212 @@ None. Implementation is straightforward and follows established patterns from ex
 ## Audit Findings
 
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description and fix required
+- [x] `hooks/block-unreviewed-edits.sh:81,85` - **Regex injection via QUALITY_AGENTS environment variable**
+
+  **Issue**: The `CLAUDE_QUALITY_AGENTS` environment variable is converted to a grep regex pattern without sanitization:
+  ```bash
+  agent_pattern=$(printf '%s' "${QUALITY_AGENTS}" | sed 's/,/|/g')
+  if grep -qE "working as the (${agent_pattern}) agent" "$transcript_path"
+  ```
+
+  **Attack Vector**:
+  ```bash
+  export CLAUDE_QUALITY_AGENTS=".*"  # Matches everything - bypasses quality gate!
+  export CLAUDE_QUALITY_AGENTS="code-developer)|(.*"  # Regex injection
+  ```
+
+  **Fix Required**: Validate that `QUALITY_AGENTS` contains only safe characters before constructing regex:
+  ```bash
+  # Validate agent list contains only alphanumeric, hyphens, commas
+  if [[ ! "${QUALITY_AGENTS}" =~ ^[a-zA-Z0-9,_-]+$ ]]; then
+      debug_log "ERROR: Invalid QUALITY_AGENTS format: ${QUALITY_AGENTS}"
+      debug_log "QUALITY_AGENTS must contain only alphanumeric, hyphens, underscores, and commas"
+      exit 2  # Block on invalid configuration
+  fi
+  ```
+
+  **Impact**: Complete bypass of quality gate enforcement
+  **Similar to**: TICKET-lifecycle-cleanup-001 regex bypass (different pattern but same class of vulnerability)
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description and fix required
+- [x] `hooks/block-unreviewed-edits.sh:54` - **Path traversal in ticket directory detection**
+
+  **Issue**: File paths are not canonicalized before checking if they're in the tickets directory:
+  ```bash
+  if [[ "$file_path" =~ ^.*tickets/.* ]]; then
+      debug_log "Workflow metadata: ticket file ($file_path)"
+      return 0
+  fi
+  ```
+
+  **Attack Vector**:
+  ```bash
+  # Path contains "tickets/" but traverses outside it
+  file_path="/home/user/project/tickets/../../../../etc/shadow"
+  # Pattern matches because it contains "tickets/"
+  # But canonical path is /etc/shadow
+  ```
+
+  **Fix Required**: Canonicalize path and verify it's actually under a tickets directory:
+  ```bash
+  is_workflow_metadata() {
+      local file_path="$1"
+      local filename
+      filename=$(basename "$file_path")
+
+      # Resolve canonical path if file exists, otherwise use as-is for new files
+      local canonical_path
+      if [[ -e "$file_path" ]]; then
+          canonical_path=$(realpath "$file_path" 2>/dev/null || echo "$file_path")
+      else
+          # For new files, canonicalize the directory and append filename
+          local dir_path
+          dir_path=$(dirname "$file_path")
+          if [[ -e "$dir_path" ]]; then
+              canonical_path="$(realpath "$dir_path" 2>/dev/null)/$filename"
+          else
+              canonical_path="$file_path"
+          fi
+      fi
+
+      # Check if canonical path contains /tickets/ directory component
+      if [[ "$canonical_path" =~ (^|/)tickets/ ]]; then
+          debug_log "Workflow metadata: ticket file ($canonical_path)"
+          return 0
+      fi
+
+      # Check if file is a handoff file (unchanged)
+      if [[ "$filename" =~ ^HANDOFF.*\.md$ ]]; then
+          debug_log "Workflow metadata: handoff file ($filename)"
+          return 0
+      fi
+
+      return 1
+  }
+  ```
+
+  **Impact**: Ability to bypass quality gate by crafting paths with traversal sequences
+  **Note**: The handoff pattern `^HANDOFF.*\.md$` is properly anchored and not vulnerable
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion for improvement
+- [x] `hooks/block-unreviewed-edits.sh:172,182,186,209` - **Fail-open on JSON parsing errors**
+
+  **Issue**: When JSON parsing fails, the hook exits 0 (allows operation):
+  ```bash
+  if ! tool_name=$(jq ...) || [[ -z "${tool_name}" ]]; then
+      debug_log "ERROR: Failed to parse tool_name from JSON"
+      exit 0  # <-- ALLOWS the operation
+  fi
+  ```
+
+  **Trade-off Analysis**:
+  - **Current behavior (fail-open)**: Don't break workflows if hook has bugs or JSON format changes
+  - **Alternative (fail-closed)**: Block operations when validation fails, maximum security
+
+  **Recommendation**: Current fail-open behavior is acceptable for usability, but document this design decision. The hook protects against intentional bypasses, not hook failures.
+
+  **Impact**: Low - Requires hook malfunction or unexpected JSON format
+
+- [x] `hooks/block-unreviewed-edits.sh:191-203` - **Sed fallback parsing edge cases**
+
+  **Issue**: The sed-based JSON parsing uses greedy `.*` matching:
+  ```bash
+  tool_name=$(printf '%s\n' "${json_input}" | sed -n 's/.*"tool_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+  ```
+
+  **Potential Risk**: The greedy `.*` matches the LAST occurrence of `"tool_name"` on a line, not the first.
+
+  **Mitigating Factors**:
+  - JSON input from Claude Code is single-line
+  - The `head -1` limits to first line
+  - Real risk is minimal in practice
+
+  **Recommendation**: Accept as-is. The sed fallback is a compatibility layer for systems without jq, and the greedy matching is unlikely to cause issues with well-formed JSON.
+
+  **Impact**: Low - Edge case requiring malformed JSON
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+**NEEDS_CHANGES**
 
 ## Rationale
-[Why this decision]
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+The implementation demonstrates solid security awareness and follows established patterns from `block-main-commits.sh`. However, **two blocking security issues** were identified:
+
+1. **CRITICAL: Regex injection** - The `CLAUDE_QUALITY_AGENTS` environment variable is used directly in grep regex without validation. An attacker with environment control could set `CLAUDE_QUALITY_AGENTS=".*"` to bypass the quality gate entirely.
+
+2. **HIGH: Path traversal** - File paths are not canonicalized before checking the tickets directory exception. Paths like `/project/tickets/../../../../etc/passwd` would be treated as workflow metadata and bypass the quality gate.
+
+These issues must be fixed before approval because they allow complete bypass of the quality enforcement mechanism.
+
+**Positive aspects**:
+- Proper command injection prevention (all variables quoted)
+- Comprehensive audit logging
+- Helpful error messages
+- Good fail-safe design (transcript validation)
+- Follows security patterns from vetted hooks
+
+**Additional notes**:
+- The MEDIUM issues are acceptable design trade-offs
+- The case-sensitive agent matching is correct behavior (not a vulnerability)
+- The handoff filename pattern is properly implemented
+
+**Recommendation**: Create fixes for the two blocking issues, then re-review.
+
+**Status Update**: 2025-12-03 23:15 - Audit complete, status remains `critic_review` pending fixes
+
+## Reviewer Verification
+
+**plugin-reviewer verification completed**: 2025-12-03 23:45
+
+I have independently reviewed the security audit findings and confirm:
+
+### Verified Findings
+1. **CRITICAL - Regex Injection (Lines 81, 85)**: CONFIRMED
+   - `CLAUDE_QUALITY_AGENTS` environment variable used directly in grep regex
+   - Attack: `export CLAUDE_QUALITY_AGENTS=".*"` bypasses all quality checks
+   - No validation that agents list contains only safe characters
+
+2. **HIGH - Path Traversal (Line 54)**: CONFIRMED
+   - File paths not canonicalized before tickets directory check
+   - Attack: `/path/tickets/../../../../etc/passwd` matches pattern but escapes directory
+   - `realpath` canonicalization required before validation
+
+3. **MEDIUM - Fail-Open Behavior**: CONFIRMED as acceptable trade-off
+   - Exits 0 on JSON parsing errors to avoid breaking workflows
+   - Documented design decision for usability over fail-closed security
+
+4. **MEDIUM - Sed Greedy Matching**: CONFIRMED as low-risk
+   - Fallback parser for systems without jq
+   - Minimal real-world risk with well-formed Claude Code JSON
+
+### Additional Security Review
+
+Compared against vetted `block-main-commits.sh` implementation:
+- ✅ Command injection prevention: All variables properly quoted
+- ✅ Proper printf usage instead of echo
+- ✅ Comprehensive audit logging with no sensitive data leaks
+- ✅ Correct exit codes (0=allow, 2=block)
+- ✅ Fail-safe transcript validation (file existence check)
+- ✅ Helpful error messages with workflow guidance
+- ✅ Case-sensitive agent matching (correct behavior)
+- ✅ Handoff filename pattern properly anchored
+
+### No New Issues Identified
+
+I did not find any security vulnerabilities beyond those already documented in the initial audit. The audit is thorough and accurate.
+
+### Strengths Observed
+- Security-conscious design following established patterns
+- Comprehensive error handling and logging
+- Clear separation of workflow metadata vs. production code
+- Well-structured fail-safe defaults
+
+### Approval Decision Confirmed
+**NEEDS_CHANGES** - Two blocking security issues must be resolved:
+1. Add input validation for `QUALITY_AGENTS` (alphanumeric + hyphens/underscores/commas only)
+2. Add path canonicalization for tickets directory detection
+
+Once these fixes are implemented, the hook will be ready for approval.
 
 # Expediter Section
 
