@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement quality transformer gate hook for file modifications
 cycle_type: development
-status: critic_review
+status: expediter_review
 claimed_by: ddoyle
 claimed_at: 2025-12-03 22:19
 created: 2025-12-03 22:10
@@ -392,17 +392,16 @@ Both fixes follow fail-secure principle: block on invalid input rather than allo
   **Impact**: Low - Edge case requiring malformed JSON
 
 ## Approval Decision
-**NEEDS_CHANGES**
+**APPROVED**
 
 ## Rationale
 
-The implementation demonstrates solid security awareness and follows established patterns from `block-main-commits.sh`. However, **two blocking security issues** were identified:
+The implementation demonstrates solid security awareness and follows established patterns from `block-main-commits.sh`. The two blocking security issues identified in initial audit have been properly fixed in commit bc96a5a.
 
-1. **CRITICAL: Regex injection** - The `CLAUDE_QUALITY_AGENTS` environment variable is used directly in grep regex without validation. An attacker with environment control could set `CLAUDE_QUALITY_AGENTS=".*"` to bypass the quality gate entirely.
+**Security fixes verified**:
+1. ✅ **CRITICAL: Regex injection** - Input validation added for `CLAUDE_QUALITY_AGENTS` environment variable. Only allows `[a-zA-Z0-9,_-]+` characters, exits with code 2 (fail-secure) on invalid input. Prevents bypass attacks like `CLAUDE_QUALITY_AGENTS=".*"`.
 
-2. **HIGH: Path traversal** - File paths are not canonicalized before checking the tickets directory exception. Paths like `/project/tickets/../../../../etc/passwd` would be treated as workflow metadata and bypass the quality gate.
-
-These issues must be fixed before approval because they allow complete bypass of the quality enforcement mechanism.
+2. ✅ **HIGH: Path traversal** - Path canonicalization using `realpath` added before directory validation. Resolves symbolic links and traversal sequences. Prevents bypass via paths like `/project/tickets/../../../../etc/passwd`. Implementation includes defense-in-depth by requiring both `/tickets/` directory component AND `TICKET-*.md` filename pattern.
 
 **Positive aspects**:
 - Proper command injection prevention (all variables quoted)
@@ -410,15 +409,17 @@ These issues must be fixed before approval because they allow complete bypass of
 - Helpful error messages
 - Good fail-safe design (transcript validation)
 - Follows security patterns from vetted hooks
+- Fail-secure principle applied to both fixes
 
 **Additional notes**:
 - The MEDIUM issues are acceptable design trade-offs
 - The case-sensitive agent matching is correct behavior (not a vulnerability)
 - The handoff filename pattern is properly implemented
+- Security fixes exceed audit requirements (defense-in-depth on path validation)
 
-**Recommendation**: Create fixes for the two blocking issues, then re-review.
+**Recommendation**: Approved for expediter testing and integration.
 
-**Status Update**: 2025-12-03 23:15 - Audit complete, status remains `critic_review` pending fixes
+**Status Update**: 2025-12-03 23:55 - Security fixes verified, approved for expediter review
 
 ## Reviewer Verification
 
@@ -473,6 +474,115 @@ I did not find any security vulnerabilities beyond those already documented in t
 2. Add path canonicalization for tickets directory detection
 
 Once these fixes are implemented, the hook will be ready for approval.
+
+## Security Fixes Verification
+
+**plugin-reviewer re-verification completed**: 2025-12-03 23:55
+
+I have verified that both critical security vulnerabilities have been properly fixed in commit bc96a5a.
+
+### CRITICAL: Regex Injection Prevention - VERIFIED FIXED
+
+**Location**: Lines 96-100 in `has_quality_agent_context()` function
+
+**Implementation**:
+```bash
+# Validate QUALITY_AGENTS contains only safe characters (alphanumeric, comma, hyphen, underscore)
+if [[ ! "${QUALITY_AGENTS}" =~ ^[a-zA-Z0-9,_-]+$ ]]; then
+    debug_log "ERROR: Invalid QUALITY_AGENTS format, blocking operation"
+    exit 2  # Block on invalid configuration - fail-secure
+fi
+```
+
+**Verification**:
+- ✅ Validation occurs BEFORE grep usage (validation at lines 96-100, grep at line 108)
+- ✅ Validates only safe characters: `[a-zA-Z0-9,_-]+` (alphanumeric, comma, hyphen, underscore)
+- ✅ Exits with code 2 (block operation) on invalid input - fail-secure behavior
+- ✅ Prevents bypass attacks like `export CLAUDE_QUALITY_AGENTS=".*"`
+- ✅ Prevents regex injection like `export CLAUDE_QUALITY_AGENTS="code-developer)|(.*"`
+
+**Attack scenarios now blocked**:
+```bash
+# Previously would match everything - now BLOCKED
+export CLAUDE_QUALITY_AGENTS=".*"
+
+# Previously would inject regex - now BLOCKED
+export CLAUDE_QUALITY_AGENTS="code-developer)|(.*"
+
+# Valid agent list - ALLOWED
+export CLAUDE_QUALITY_AGENTS="code-developer,custom-agent_v2"
+```
+
+**Status**: FIXED CORRECTLY
+
+### HIGH: Path Traversal Prevention - VERIFIED FIXED
+
+**Location**: Lines 53-71 in `is_workflow_metadata()` function
+
+**Implementation**:
+```bash
+# Canonicalize path to resolve any traversal sequences
+local canonical_path
+if [[ -e "$file_path" ]]; then
+    canonical_path=$(realpath "$file_path" 2>/dev/null || echo "$file_path")
+else
+    # For new files, canonicalize the directory portion
+    local dir_path
+    dir_path=$(dirname "$file_path")
+    if [[ -d "$dir_path" ]]; then
+        canonical_path="$(realpath "$dir_path" 2>/dev/null)/${filename}"
+    else
+        canonical_path="$file_path"
+    fi
+fi
+
+debug_log "Canonical path: ${canonical_path}"
+
+# Check if canonical path contains /tickets/ as a proper directory component
+if [[ "$canonical_path" =~ (^|/)tickets/ ]] && [[ "$filename" =~ ^TICKET-.*\.md$ ]]; then
+    debug_log "Workflow metadata: ticket file ($canonical_path)"
+    return 0
+fi
+```
+
+**Verification**:
+- ✅ Uses `realpath` to canonicalize paths before validation
+- ✅ Handles existing files (line 56)
+- ✅ Handles new files by canonicalizing directory portion (lines 58-65)
+- ✅ Final check uses canonical path (line 71)
+- ✅ Prevents traversal attacks like `/project/tickets/../../../../etc/shadow`
+- ✅ Defense-in-depth: Requires BOTH `/tickets/` directory AND `TICKET-*.md` filename pattern
+
+**Attack scenarios now blocked**:
+```bash
+# Previously would match pattern - now resolves to /etc/shadow (BLOCKED)
+file_path="/home/user/project/tickets/../../../../etc/shadow"
+
+# Previously would match - now resolves outside tickets/ (BLOCKED)
+file_path="/home/user/tickets/../../../etc/passwd"
+
+# Valid ticket file - ALLOWED
+file_path="/home/user/project/tickets/queue/TICKET-001.md"
+```
+
+**Additional improvement**: Line 71 adds defense-in-depth by requiring BOTH:
+1. Canonical path contains `/tickets/` directory component
+2. Filename matches `^TICKET-.*\.md$` pattern
+
+This exceeds the audit requirement and provides additional security.
+
+**Status**: FIXED CORRECTLY (with improvement)
+
+### Summary
+
+Both CRITICAL and HIGH security vulnerabilities have been properly addressed:
+
+1. **Regex Injection**: Input validation prevents malicious environment variable values
+2. **Path Traversal**: Path canonicalization prevents directory escape attacks
+
+All fixes follow fail-secure principles (block on invalid input rather than allow).
+
+The implementation is now secure and ready for approval.
 
 # Expediter Section
 
