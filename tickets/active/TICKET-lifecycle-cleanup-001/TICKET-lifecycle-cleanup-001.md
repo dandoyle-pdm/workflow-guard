@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement cleanup-merged-ticket.sh for post-merge cleanup
 cycle_type: development
-status: critic_review
+status: needs_changes
 claimed_by: ddoyle
 claimed_at: 2025-12-03 20:22
 created: 2025-12-03 22:20
@@ -142,22 +142,105 @@ None - implementation is straightforward following existing patterns.
 
 ## Audit Findings
 
+Conducted comprehensive security review of `cleanup-merged-ticket.sh` with focus on destructive operations (branch and worktree deletion).
+
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description and fix required
+
+- [x] `scripts/cleanup-merged-ticket.sh:35-50` - **Case sensitivity bypass in protected branch check**
+  - **Vulnerability**: Branch names "Main", "Master", "PRODUCTION" bypass protection due to case-sensitive comparison
+  - **Attack vector**: User could run `cleanup-merged-ticket.sh Main` and delete the main branch
+  - **Root cause**: Line 45 uses `==` operator without normalizing case
+  - **Fix required**: Convert both `$branch`, `$branch_base`, and `$protected` to lowercase before comparison
+  - **Code location**: `is_protected_branch()` function
+  - **Suggested fix**:
+    ```bash
+    # Normalize to lowercase for case-insensitive comparison
+    local branch_lower="${branch,,}"
+    local branch_base_lower="${branch_base,,}"
+    local protected_lower="${protected,,}"
+    if [[ "$branch_lower" == "$protected_lower" ]] || [[ "$branch_base_lower" == "$protected_lower" ]]; then
+        return 0
+    fi
+    ```
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description and fix required
+
+None found. All other security-critical areas are properly implemented:
+- PR merge verification requires both state=MERGED AND mergedAt non-null (lines 87-98)
+- Command injection prevented by consistent quoting throughout (lines 73, 160, 181, 196, 202)
+- Path traversal prevented by realpath normalization and prefix validation (lines 147-157)
+- Safe branch deletion using `git branch -d` not `-D` (line 181)
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion for improvement
+
+- [x] `scripts/cleanup-merged-ticket.sh:15` - **WORKTREE_BASE validation**
+  - **Issue**: Should validate WORKTREE_BASE is set and is an absolute path at startup
+  - **Risk**: If WORKTREE_BASE is relative or malformed, path validation could fail incorrectly
+  - **Current mitigation**: Fallback to `~/workspace/worktrees` is reasonable
+  - **Suggested enhancement**: Add validation in main():
+    ```bash
+    if [[ ! "$WORKTREE_BASE" =~ ^/ ]]; then
+        log_error "WORKTREE_BASE must be an absolute path: $WORKTREE_BASE"
+        exit 1
+    fi
+    ```
+
+- [x] `scripts/cleanup-merged-ticket.sh:238` - **No branch name format validation**
+  - **Issue**: Accepts any string as branch name, could lead to confusing errors
+  - **Risk**: LOW - not a security issue due to proper quoting, just UX
+  - **Suggested enhancement**: Validate branch name matches git conventions (no spaces, no `..`, etc.)
+
+## Security Strengths Verified
+
+**PR Merge Verification (SECURE)**:
+- Checks gh CLI availability and authentication (lines 58, 65)
+- Requires state=MERGED (line 87)
+- Requires mergedAt is non-null (line 94)
+- Properly handles gh CLI failures (line 73)
+- Safe JSON parsing with grep/cut (lines 80, 83)
+
+**Worktree Path Validation (SECURE)**:
+- Normalizes paths with realpath to resolve symlinks (lines 147-150)
+- Validates worktree is under WORKTREE_BASE with regex prefix check (line 152)
+- Regex `^${normalized_base}/` requires trailing slash, preventing "worktrees-evil" bypass
+- Properly quoted in git command (line 160)
+
+**Branch Deletion (SECURE)**:
+- Uses `git branch -d` (not `-D`) to fail on unmerged changes (line 181)
+- Properly quoted branch names prevent command injection (lines 174, 181, 196, 202)
+- Git's own branch name validation provides additional protection
+
+**Error Handling (SECURE)**:
+- Uses `set -euo pipefail` for strict error handling (line 2)
+- All destructive operations check return codes and exit on failure (lines 274, 284-289, 292-297, 300-305)
+- Fail-fast approach prevents partial cleanup states
+
+**Logging (SECURE)**:
+- All destructive operations logged to `~/.claude/logs/cleanup-ticket.log` for audit trail
+- Timestamps on all log entries (lines 21-23)
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+
+**NEEDS_CHANGES**
 
 ## Rationale
-[Why this decision]
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+The implementation demonstrates strong security practices overall:
+- Excellent PR verification logic requiring both state and timestamp
+- Proper command injection prevention via consistent quoting
+- Solid path traversal protection with realpath normalization
+- Safe branch deletion using `-d` flag
+- Comprehensive error handling and logging
+
+However, the **case sensitivity bypass in protected branch check is a critical security vulnerability** that MUST be fixed before approval. This could allow accidental or malicious deletion of protected branches by simply using different casing (Main vs main).
+
+The MEDIUM issues are nice-to-haves but not blockers:
+- WORKTREE_BASE validation would add defense-in-depth
+- Branch name format validation would improve UX
+
+**Required for approval**: Fix the CRITICAL case sensitivity issue in `is_protected_branch()` function.
+
+**Status Update**: [2025-12-03 22:45] - Changed status to `needs_changes` - creator must fix case sensitivity vulnerability
 
 # Expediter Section
 
