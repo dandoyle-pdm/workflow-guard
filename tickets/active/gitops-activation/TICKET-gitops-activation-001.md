@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Implement ticket activation with GitOps locking
 cycle_type: development
-status: creator_review
+status: expediter_review
 created: 2025-12-03 19:30
 worktree_path: null
 ---
@@ -198,10 +198,10 @@ None - design is solid and implementation follows spec exactly.
 - [x] **Protected branch detection**: Properly handles origin/ prefix and space-separated list
 - [x] **Path traversal blocked**: Git refuses to stage files outside repo (e.g., `../../../etc/passwd`)
 
-## Approval Decision
+## Approval Decision (Initial Review)
 **NEEDS_CHANGES** - Critical security bypass must be fixed before merge
 
-## Rationale
+## Rationale (Initial Review)
 
 The ticket lifecycle exception has a **critical security flaw** that completely defeats the purpose of the main branch protection hook. Any file placed in `tickets/queue/`, `tickets/active/`, `tickets/completed/`, or `tickets/archive/` will bypass the commit block, regardless of file extension or content.
 
@@ -230,6 +230,47 @@ The implementation is otherwise solid:
 - No command injection vulnerabilities in git commands
 
 **Status Update**: 2025-12-03 20:45 - Changed status to `creator_review` (return to creator for fix)
+
+---
+
+## Re-Review: Fix Verification
+
+**Status**: All security issues resolved
+
+### CRITICAL Fix Verified
+- [x] Filename validation added to `is_ticket_lifecycle_only()` (lines 58-65)
+- [x] Regex `^(TICKET|HANDOFF)-[a-zA-Z0-9-]+\.md$` properly validates filenames
+- [x] Both directory AND filename checks required for function to return 0
+- [x] Exploit bypass (`tickets/queue/exploit.go`) is now blocked
+- [x] Valid ticket files (`TICKET-*.md`, `HANDOFF-*.md`) still pass validation
+
+### HIGH Fix Verified
+- [x] Variable sanitization added for `$user` (line 106: `tr -d '\n\r'`)
+- [x] Variable sanitization added for `$timestamp` (line 104: `tr -d '\n\r'`)
+- [x] Variable sanitization added for `$worktree_path` (line 171: `tr -d '\n\r'`)
+- [x] Sed injection attack vector completely mitigated
+
+### MEDIUM Issues
+Not addressed in this fix (acceptable for expedited security patch):
+- Unused variable `SCRIPT_DIR` (cosmetic)
+- Shellcheck SC2155 warning (low impact)
+- Audit logging performance (optimization opportunity)
+
+**Commit**: 083f2a4 - fix: patch critical regex bypass in ticket lifecycle exception
+
+## Approval Decision (Re-Review)
+**APPROVED** - Security fixes are correct and complete
+
+## Rationale (Re-Review)
+Both critical and high-priority security vulnerabilities have been properly patched:
+
+1. **Regex bypass eliminated**: The `is_ticket_lifecycle_only()` function now performs two-stage validation (directory + filename), completely preventing the exploit scenario.
+
+2. **Sed injection mitigated**: All user-controlled variables are sanitized before use in sed commands, preventing YAML injection attacks.
+
+The fixes are minimal, focused, and follow secure coding best practices. The implementation maintains the original functionality while closing security holes.
+
+**Status Update**: 2025-12-03 21:15 - Changed status to `expediter_review` (ready for integration testing)
 
 # Expediter Section
 
