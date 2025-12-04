@@ -157,7 +157,7 @@ None - design is solid and implementation follows spec exactly.
 - `README.md` - Added Ticket Activation section
 
 **Commits:**
-- Pending (feature/gitops-activation branch)
+- 8546944a20fdb4a11282826924b140d71e8589b9 - feat: implement ticket activation with GitOps locking
 
 **Status Update**: 2025-12-03 19:45 - Changed status to `critic_review`
 
