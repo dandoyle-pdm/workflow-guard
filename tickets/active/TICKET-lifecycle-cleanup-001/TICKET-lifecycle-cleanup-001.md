@@ -6,7 +6,9 @@ sequence: 001
 parent_ticket: null
 title: Implement cleanup-merged-ticket.sh for post-merge cleanup
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-03 20:22
 created: 2025-12-03 22:20
 worktree_path: null
 ---
