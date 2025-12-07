@@ -6,9 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Fix activate-ticket.sh to use session-id for branch/worktree naming
 cycle_type: development
-status: open
+status: in_progress
+claimed_by: ddoyle
+claimed_at: 2025-12-07 11:50
 created: 2025-12-07 11:45
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/activate-fix
 ---
 
 # Requirements
