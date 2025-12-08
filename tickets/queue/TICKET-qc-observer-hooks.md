@@ -114,11 +114,44 @@ Instead of 4 large hooks, implement incrementally:
 2. Is phased approach acceptable given 50-line constraint?
 3. Bash vs JavaScript - recommend Bash for consistency
 
+## Scope Decisions (2025-12-08)
+
+**Q1: Logging Approach → ADD TO EXISTING HOOK**
+- Violation detection IS the logging trigger - can't separate without duplication
+- Hook already has context (file_path, tool_name, transcript analysis)
+- Adding ~20 lines to existing 264-line file is pragmatic
+- No performance overhead from duplicate JSON parsing
+
+**Q2: Phased Approach → APPROVED**
+- Phase 1 (this ticket): Violation logging + storage infrastructure
+- Phase 2 (new ticket): SessionStart context injection
+- Phase 3 (new ticket): SessionEnd summary generation
+- Each phase delivers independent value
+
+**Q3: Language → BASH**
+- Consistency with existing 7 Bash hooks
+- Proven patterns for JSON parsing, logging, exit codes
+- No Node.js dependency needed
+
+## Final Scope (Phase 1)
+
+**Deliverables:**
+1. `hooks/observe-violation.sh` - Utility to log violations to JSONL (~40 lines)
+2. Modification to `block-unreviewed-edits.sh` - Add call to observe-violation (~5 lines)
+3. Storage infrastructure: `~/.novacloud/observations/violations.jsonl`
+
+**Out of Scope (future tickets):**
+- SessionStart context injection (TICKET-qc-observer-context)
+- SessionEnd summary generation (TICKET-qc-observer-summary)
+- Pattern aggregation engine
+- Improvement prompt generation
+
 ## Changes Made
 - File changes: None yet (design review completed)
 - Commits: None
 
 **Status Update**: 2025-12-07 21:15 - Creator requests scope clarification before implementation
+**Status Update**: 2025-12-08 - Scope decisions made, ready for implementation
 
 # Critic Section
 
