@@ -152,6 +152,42 @@ Enforces quality agent context for file modifications (Edit, Write, NotebookEdit
 **Quality agent detection:**
 The hook reads the transcript JSONL file to detect if a quality agent from qc-router is active. When you dispatch a quality agent via the Task tool, the agent's identity marker appears in the transcript, allowing the hook to verify proper quality cycle context.
 
+#### validate-ticket-naming
+
+Enforces ticket naming conventions for files in the `tickets/` directory.
+
+**Behavior:**
+- Validates filename pattern: `TICKET-{session-id}-{sequence}.md`
+- Validates directory uses session-id (not full ticket name)
+- Exception: `tickets/queue/` only validates filename (no directory check)
+- Blocks invalid names with detailed guidance
+- Ensures consistency for automation workflows
+
+**Naming Rules:**
+- **session-id**: lowercase letters, numbers, hyphens (e.g., `quality-gate`, `activate-fix`)
+- **sequence**: exactly 3 digits (e.g., `001`, `002`)
+
+**Valid Examples:**
+```
+tickets/queue/TICKET-quality-gate-001.md           ✓
+tickets/active/quality-gate/TICKET-quality-gate-001.md  ✓
+tickets/completed/activate-fix/TICKET-activate-fix-001.md  ✓
+```
+
+**Invalid Examples:**
+```
+TICKET-Quality-Gate-001.md        ✗ (uppercase not allowed)
+TICKET-quality_gate-001.md        ✗ (underscores not allowed)
+tickets/active/TICKET-quality-gate-001/TICKET-quality-gate-001.md  ✗ (directory should be session-id)
+```
+
+**Why this matters:**
+
+- Consistent naming enables automation (`activate-ticket.sh`, `complete-ticket.sh`)
+- Session-id based directories allow multiple sequential tickets (001, 002, etc.)
+- Lowercase-with-hyphens prevents case-sensitivity issues across platforms
+- Automated workflows rely on these patterns to function correctly
+
 ## Configuration
 
 ### Worktree Location
