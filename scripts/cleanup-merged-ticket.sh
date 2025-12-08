@@ -109,7 +109,7 @@ verify_pr_merged() {
 find_worktree_path() {
     local branch="$1"
 
-    log_info "Looking for worktree for branch: $branch"
+    log_info "Looking for worktree for branch: $branch" >&2
 
     local worktree_list
     worktree_list=$(git worktree list --porcelain)
@@ -130,11 +130,11 @@ find_worktree_path() {
     done <<< "$worktree_list"
 
     if [[ -z "$worktree_path" ]]; then
-        log_info "No worktree found for branch: $branch"
+        log_info "No worktree found for branch: $branch" >&2
         return 1
     fi
 
-    log_info "Found worktree: $worktree_path"
+    log_info "Found worktree: $worktree_path" >&2
     echo "$worktree_path"
     return 0
 }

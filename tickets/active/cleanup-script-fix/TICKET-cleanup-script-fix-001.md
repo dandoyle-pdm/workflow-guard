@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix variable capture bug in cleanup-merged-ticket.sh
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 21:49
 created: 2025-12-07 23:39
@@ -61,35 +61,35 @@ The cleanup script is a key part of the ticket lifecycle workflow. When it fails
 # Creator Section
 
 ## Implementation Notes
-[To be filled during implementation]
+**Fix Applied:** Option 1 - Redirect log_info to stderr in find_worktree_path()
 
-**Recommended Fix Options:**
-1. **Redirect log_info to stderr in find_worktree_path():**
-   ```bash
-   log_info "Looking for worktree for branch: $branch" >&2
-   ```
+Modified the `find_worktree_path()` function to redirect all `log_info` calls to stderr using `>&2`. This ensures that:
+1. Only the actual path is written to stdout (and captured in the variable)
+2. Log messages still appear on the terminal for user visibility
+3. Log messages still get written to the log file (via the `tee` in `log_info`)
 
-2. **Create separate logging function for functions that return values:**
-   ```bash
-   log_debug() { printf '[%s] DEBUG: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" >> "$LOG_FILE"; }
-   ```
+**Changes Made:**
+- Line 112: Added `>&2` to "Looking for worktree" log message
+- Line 133: Added `>&2` to "No worktree found" log message
+- Line 137: Added `>&2` to "Found worktree" log message
 
-3. **Capture only the last line of output:**
-   ```bash
-   worktree_path=$(find_worktree_path "$branch" | tail -1)
-   ```
-
-Option 1 is cleanest - log_info should go to stderr anyway for functions that return values.
+This is the cleanest solution as it maintains all existing logging behavior while ensuring that value-returning functions don't pollute their return values with log output.
 
 ## Questions/Concerns
 - Should all `log_info` calls in value-returning functions use stderr?
+  - **Decision:** Yes, this is a best practice. Functions that return values via stdout should send all diagnostic output to stderr.
 - Consider adding integration test for cleanup script
+  - **Deferred:** Out of scope for this bug fix. Can be addressed in future ticket.
 
 ## Changes Made
-- File changes: [To be filled]
-- Commits: [To be filled]
+- **File changes:**
+  - `scripts/cleanup-merged-ticket.sh` - Modified `find_worktree_path()` function (lines 112, 133, 137)
+    - Added `>&2` redirection to all three `log_info` calls
+    - Ensures only the path is returned via stdout, while log messages go to stderr
+- **Commits:**
+  - fix: redirect log_info to stderr in find_worktree_path()
 
-**Status Update**: [To be filled] - Changed status to `critic_review`
+**Status Update**: 2025-12-07 - Changed status to `critic_review`
 
 # Critic Section
 
@@ -138,3 +138,11 @@ Option 1 is cleanest - log_info should go to stderr anyway for functions that re
 ## [2025-12-07 21:49] - Activated
 - Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/cleanup-script-fix
 - Branch: ticket/cleanup-script-fix
+
+## [2025-12-07 23:45] - Implementation Complete
+- Modified `find_worktree_path()` to redirect log_info calls to stderr
+- All three log_info calls now use `>&2` redirection
+- Function now returns ONLY the path via stdout
+- Log messages still visible on terminal and written to log file
+- Security path validation will now work correctly
+- Status changed to `critic_review`
