@@ -253,6 +253,14 @@ main() {
     # Log for audit
     debug_log "AUDIT: Blocked ${tool_name} without quality agent - file=${file_path}"
 
+    # Log violation for QC Observer (fail-safe - errors won't break blocking)
+    local violation_json
+    violation_json=$(cat <<EOF
+{"timestamp":"$(date -u '+%Y-%m-%dT%H:%M:%SZ')","observation_type":"blocking","cycle":"inferred","session_id":"","agent":null,"tool":"${tool_name}","file":"${file_path}","violation":"quality_bypass","severity":"HIGH","blocking":true,"context":{}}
+EOF
+)
+    printf '%s' "${violation_json}" | "${SCRIPT_DIR}/observe-violation.sh" 2>/dev/null || true
+
     # Exit code 2 blocks the tool execution
     exit 2
 }
