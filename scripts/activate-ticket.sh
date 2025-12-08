@@ -219,9 +219,21 @@ main() {
     local ticket_filename
     ticket_filename=$(basename "$ticket_path")
     local ticket_id="${ticket_filename%.md}"
-    local branch_name="ticket/${ticket_id}"
-    local branch_dir
-    branch_dir=$(echo "$ticket_id" | tr '/' '-')
+
+    # Extract session_id from ticket metadata (preferred) or filename
+    local session_id
+    if [[ -f "$ticket_path" ]] && session_id=$(grep "^session_id:" "$ticket_path" | head -1 | cut -d: -f2 | tr -d ' \t\n\r'); then
+        if [[ -z "$session_id" ]]; then
+            # Fallback to extracting from filename: TICKET-{session-id}-{sequence}
+            session_id=$(echo "$ticket_id" | sed 's/^TICKET-//;s/-[0-9]\{3\}$//')
+        fi
+    else
+        # Fallback to extracting from filename: TICKET-{session-id}-{sequence}
+        session_id=$(echo "$ticket_id" | sed 's/^TICKET-//;s/-[0-9]\{3\}$//')
+    fi
+
+    local branch_name="ticket/${session_id}"
+    local branch_dir="${session_id}"
 
     local main_repo
     main_repo=$(get_main_repo_root)
@@ -232,6 +244,7 @@ main() {
 
     log_info "============================================"
     log_info "Activating ticket: $ticket_id"
+    log_info "Session ID: $session_id"
     log_info "Project: $project"
     log_info "Branch: $branch_name"
     log_info "============================================"
