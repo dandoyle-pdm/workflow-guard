@@ -337,7 +337,11 @@ workflow-guard                        qc-router
 ├── hooks/                            ├── agents/
 │   ├── block-main-commits.sh         │   ├── plugin-engineer/AGENT.md
 │   ├── enforce-pr-workflow.sh        │   ├── plugin-reviewer/AGENT.md
-│   └── block-unreviewed-edits.sh     │   └── plugin-tester/AGENT.md
+│   ├── enforce-ticket-completion.sh  │   └── plugin-tester/AGENT.md
+│   ├── block-mcp-git-commits.sh      │
+│   ├── confirm-code-edits.sh         │
+│   ├── validate-ticket-naming.sh     │
+│   └── block-unreviewed-edits.sh     │
 │       │                             │
 │       │ reads transcript            │
 │       │ detects agent identity      │
