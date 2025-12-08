@@ -6,7 +6,9 @@ sequence: 001
 parent_ticket: null
 title: Fix variable capture bug in cleanup-merged-ticket.sh
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-07 21:49
 created: 2025-12-07 23:39
 worktree_path: null
 ---
