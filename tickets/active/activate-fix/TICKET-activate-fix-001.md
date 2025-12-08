@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix activate-ticket.sh to use session-id for branch/worktree naming
 cycle_type: development
-status: expediter_review
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 11:50
 created: 2025-12-07 11:45
@@ -111,6 +111,13 @@ Completed tickets already use correct pattern:
 - Security hardened following patterns from existing hooks
 - Registered in hooks/hooks.json with Write tool matcher
 
+**REWORK (2025-12-07 18:45):**
+- Fixed queue directory validation bug identified by plugin-tester
+- Added exception for `tickets/queue/` - only validates filename pattern, not directory structure
+- Queue files are created BEFORE activation, so they can't follow session-id directory pattern
+- Directory structure validation now only enforced for `tickets/active/` and `tickets/completed/`
+- Updated error messages to clarify queue exemption
+
 ### Part 3: complete-ticket.sh Worktree Detection Fix
 - Changed `is_worktree()` from using `--git-common-dir` to `--git-dir`
 - `--git-common-dir` returns the parent .git directory, not the worktree .git
@@ -134,8 +141,10 @@ None. All three parts implemented as specified.
 - 3496fb2: feat: add validate-ticket-naming.sh PreToolUse hook
 - a8fa0a6: feat: register validate-ticket-naming hook in hooks.json
 - 80a89a4: fix: correct is_worktree() detection in complete-ticket.sh
+- d3aa416: fix: add queue directory exception to validate-ticket-naming hook (REWORK)
 
 **Status Update**: 2025-12-07 12:15 - Changed status to `critic_review`
+**Status Update**: 2025-12-07 18:45 - Rework complete, changed status back to `critic_review`
 
 # Critic Section
 
