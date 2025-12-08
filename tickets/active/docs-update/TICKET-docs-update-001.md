@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Update README.md and documentation with current hook inventory
 cycle_type: documentation
-status: in_progress
+status: critic_review
 created: 2025-12-07 17:55
 worktree_path: ~/.novacloud/worktrees/workflow-guard/docs-update
 ---
@@ -73,16 +73,55 @@ Users and future sessions need accurate documentation to understand the current 
 # Creator Section
 
 ## Implementation Notes
-[To be filled by tech-writer]
+
+Successfully updated all documentation to reflect the current hook inventory of 7 functional hooks (plus 1 diagnostic utility).
+
+**Documentation approach:**
+- Each hook documented with consistent structure: purpose, behavior, examples
+- Added session-id vs ticket-id naming convention section to clarify automation patterns
+- Updated all configuration examples to show complete hook inventory
+- Updated architecture diagram to visualize all hooks
+- Updated CLAUDE.md for developer quick reference
+
+**Key additions:**
+1. `block-mcp-git-commits.sh` - Documented MCP tool protection with explanation of why it's needed
+2. `confirm-code-edits.sh` - Documented code edit confirmation with configuration options
+3. `validate-ticket-naming.sh` - Documented naming validation with valid/invalid examples
+4. Session-ID vs Ticket-ID section - Explains automation patterns and resource naming
 
 ## Questions/Concerns
-[To be filled by tech-writer]
+
+None. All hooks are accurately documented with their current behavior verified from source code.
 
 ## Changes Made
-- File changes:
-- Commits:
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**File changes:**
+- `/home/ddoyle/.novacloud/worktrees/workflow-guard/docs-update/README.md`
+  - Updated hook count from "Four" to "Seven" (line 50)
+  - Added documentation for `block-mcp-git-commits` hook
+  - Added documentation for `confirm-code-edits` hook
+  - Added documentation for `validate-ticket-naming` hook
+  - Added "Session-ID vs Ticket-ID Naming" section
+  - Updated hooks.json example with all 7 hooks
+  - Updated architecture diagram with all 7 hooks
+  - Added "Code Edit Confirmation" configuration section
+
+- `/home/ddoyle/.novacloud/worktrees/workflow-guard/docs-update/CLAUDE.md`
+  - Updated directory structure to show all 8 hook files
+  - Updated Hooks Reference table with all 7 functional hooks
+
+**Commits:**
+1. `252f90b` - docs: update hook count from four to seven
+2. `bfec2af` - docs: add documentation for block-mcp-git-commits hook
+3. `2fd0592` - docs: add documentation for confirm-code-edits hook
+4. `5daae00` - docs: add documentation for validate-ticket-naming hook
+5. `7a3e44a` - docs: add session-id vs ticket-id naming convention section
+6. `4b4449e` - docs: update hooks.json example with all 7 hooks
+7. `77018d2` - docs: update architecture diagram with all 7 hooks
+8. `e9ce528` - docs: add configuration section for code edit confirmation
+9. `cc67945` - docs: update CLAUDE.md with all 7 hooks
+
+**Status Update**: 2025-12-07 18:30 - Changed status to `critic_review`
 
 # Critic Section
 
