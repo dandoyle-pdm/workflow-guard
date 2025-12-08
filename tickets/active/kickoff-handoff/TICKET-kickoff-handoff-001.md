@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: TICKET-kickoff-cmd-001
 title: Make /kickoff handoff-aware for seamless session continuity
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 23:30
 created: 2025-12-08 01:28
@@ -23,13 +23,13 @@ Enhance `commands/kickoff.md` to recognize and parse handoff prompt structure, e
 **Desired state:** Kickoff detects handoff structure and extracts actionable context
 
 ## Acceptance Criteria
-- [ ] Detects handoff prompt structure (has "Session Type:", "Next Steps:", etc.)
-- [ ] Extracts session type → maps to quality chain
-- [ ] Extracts ticket reference → continues existing or creates new
-- [ ] Extracts next steps → immediate actions for agent
-- [ ] Passes full context to delegated agent
-- [ ] Falls back to generic analysis if not a handoff
-- [ ] Stays under 50 lines
+- [x] Detects handoff prompt structure (has "Session Type:", "Next Steps:", etc.)
+- [x] Extracts session type → maps to quality chain
+- [x] Extracts ticket reference → continues existing or creates new
+- [x] Extracts next steps → immediate actions for agent
+- [x] Passes full context to delegated agent
+- [x] Falls back to generic analysis if not a handoff
+- [x] Stays under 50 lines (37 substantive lines)
 
 # Context
 
@@ -67,11 +67,21 @@ Making them speak to each other enables true session continuity:
 # Creator Section
 
 ## Implementation Notes
-[To be filled during implementation]
+
+Added "Handoff Detection" section to kickoff.md with:
+- **Detection markers**: Checks for "Session Type:", "Next Steps:", "TICKET-" references, "Current Understanding:"
+- **Session type mapping**: DEBUG→R1(code-tester), DEVELOPMENT→R1(code-developer), HOTFIX→R5(code-developer), INVESTIGATE→R4(explore)
+- **Context extraction**: Ticket ref, next steps, full context for agent delegation
+- **Fallback behavior**: If no handoff detected, use generic work type analysis
+
+The enhancement is compact (added ~12 substantive lines) and maintains single responsibility. Updated Process section to reflect handoff-aware analysis.
 
 ## Changes Made
-- File changes: [To be filled]
-- Commits: [To be filled]
+- File changes: /home/ddoyle/.novacloud/worktrees/workflow-guard/kickoff-handoff/commands/kickoff.md
+  - Added "Handoff Detection" section (lines 11-25)
+  - Updated "Process" section to include handoff path (lines 27-33)
+- Total substantive lines: ~37 (well under 50 line limit)
+- Commits: [To be filled after commit]
 
 # Critic Section
 

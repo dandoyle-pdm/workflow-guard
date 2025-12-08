@@ -8,13 +8,29 @@ Use ultrathink to coordinate quality chains for this kickoff.
 
 $ARGUMENTS
 
+## Handoff Detection
+
+Check if input contains handoff markers:
+- "Session Type:" or "## Session Type" or "Session Continuation:"
+- "Next Steps:" or "## Next Steps"
+- "TICKET-" references
+- "Current Understanding:" or "## Current Understanding"
+
+If detected:
+1. **Extract session type** from "Session Type:" or "Session Continuation:" line
+2. **Map to quality chain**: DEBUG→R1(code-tester), DEVELOPMENT→R1(code-developer), HOTFIX→R5(code-developer), INVESTIGATE→R4(explore)
+3. **Extract ticket ref** from "Ticket Reference:" or scan for "TICKET-{id}-{seq}"
+4. **Extract next steps** from "Next Steps:" section
+5. **Pass full context** to delegated agent (include Current Understanding, Changes Made, etc.)
+6. If ticket exists: continue in active/{branch}/, else create new ticket
+
 ## Process
 
-1. **Analyze** - What type of work? (code, docs, plugin, prompt, config)
-2. **Select chain** - Match to quality recipe below
-3. **Ticket** - Create in project's `tickets/queue/` if tracked work
+1. **Analyze** - Handoff structure OR generic work type (code, docs, plugin, prompt, config)
+2. **Select chain** - From session type OR match to quality recipe below
+3. **Ticket** - Continue existing OR create in project's `tickets/queue/` if tracked work
 4. **Push** - Commit and push ticket immediately
-5. **Delegate** - Invoke agent via Task tool (never implement in main thread)
+5. **Delegate** - Invoke agent via Task tool with full context (never implement in main thread)
 
 ## Quality Recipes
 
