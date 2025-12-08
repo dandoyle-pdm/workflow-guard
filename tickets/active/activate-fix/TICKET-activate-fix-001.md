@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix activate-ticket.sh to use session-id for branch/worktree naming
 cycle_type: development
-status: critic_review
+status: expediter_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 11:50
 created: 2025-12-07 11:45
@@ -142,21 +142,128 @@ None. All three parts implemented as specified.
 ## Audit Findings
 
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description and fix required
+None found. Security review passed.
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description and fix required
+None found.
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion for improvement
+
+1. **hooks/validate-ticket-naming.sh:43** - Session-id extraction uses sed pattern that could be optimized
+   - Current: `echo "$filename" | sed 's/^TICKET-//;s/-[0-9]\{3\}\.md$//'`
+   - This pattern is correct and safe - no user input is passed to sed unescaped
+   - Uses proper regex escaping `\{3\}` to prevent regex injection
+   - **Assessment**: No security concern, follows best practices
+
+2. **scripts/activate-ticket.sh:225-228** - Session-id extraction has fallback logic
+   - Extracts from ticket metadata first (preferred path)
+   - Falls back to filename parsing if metadata missing/empty
+   - Properly sanitized with `tr -d ' \t\n\r'` to remove whitespace
+   - **Assessment**: Secure and robust design
+
+3. **scripts/complete-ticket.sh:39** - Fixed `is_worktree()` detection
+   - Changed from `--git-common-dir` to `--git-dir` (correct fix)
+   - Pattern match `[[ "$git_dir" == *".git/worktrees/"* ]]` is safe
+   - **Assessment**: Fix is correct and secure
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+**APPROVED**
 
 ## Rationale
-[Why this decision]
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+This implementation demonstrates excellent security practices and follows all established patterns from existing hooks:
+
+**Security Analysis:**
+1. **Command Injection Prevention**: All user inputs are properly quoted and sanitized
+   - activate-ticket.sh line 225: Uses `cut -d: -f2 | tr -d ' \t\n\r'` to sanitize session_id
+   - activate-ticket.sh line 228: Uses sed with proper escaping `s/-[0-9]\{3\}$/`
+   - validate-ticket-naming.sh line 43: Same pattern, properly escaped
+   - activate-ticket.sh line 171: Safe variable sanitization with `tr -d '\n\r'`
+
+2. **Regex Injection Prevention**: All regex patterns are hardcoded constants
+   - validate-ticket-naming.sh line 28: Pattern is readonly constant `^TICKET-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}\.md$`
+   - No user input is incorporated into regex patterns
+
+3. **Path Traversal Prevention**: All paths are validated before use
+   - activate-ticket.sh line 216: Uses `realpath` to canonicalize paths
+   - validate-ticket-naming.sh line 67-69: Only validates tickets/ subdirectory
+   - No arbitrary path construction from user input
+
+4. **Fail-Secure Behavior**: Hook blocks invalid input
+   - validate-ticket-naming.sh line 242: Returns exit 2 to block operation
+   - validate-ticket-naming.sh line 249: Returns exit 2 to block operation
+   - Follows pattern from block-main-commits.sh and enforce-pr-workflow.sh
+
+5. **Input Validation**: Comprehensive validation on all external inputs
+   - validate-ticket-naming.sh line 50-54: Filename pattern validation
+   - validate-ticket-naming.sh line 79-82: Directory name validation
+   - activate-ticket.sh line 34-56: Ticket path validation
+
+**Code Quality:**
+1. **Pattern Consistency**: Follows established patterns perfectly
+   - Uses printf instead of echo (security best practice)
+   - Proper jq error handling with fallback to sed
+   - Debug logging to ~/.claude/logs/hooks-debug.log
+   - Exit code 0 (allow) vs 2 (block with message)
+
+2. **Error Handling**: Excellent error handling throughout
+   - activate-ticket.sh lines 224-233: Graceful fallback from metadata to filename
+   - validate-ticket-naming.sh lines 176-216: Dual parsing strategy (jq + sed)
+   - complete-ticket.sh line 39: Clear variable assignment with git rev-parse
+
+3. **Helpful Error Messages**: Clear, actionable guidance
+   - validate-ticket-naming.sh lines 88-164: Comprehensive error messages with examples
+   - Explains WHY rules matter (lines 155-162)
+   - Shows correct and incorrect examples
+
+**Logic Correctness:**
+1. **Session-id Extraction**: Implemented correctly
+   - Primary: Parse from YAML metadata `session_id:` field (preferred)
+   - Fallback: Extract from filename pattern `TICKET-{session-id}-{sequence}`
+   - Pattern: `sed 's/^TICKET-//;s/-[0-9]\{3\}$//'` correctly strips prefix and 3-digit suffix
+
+2. **Filename Validation**: Pattern is precise and correct
+   - `^TICKET-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}\.md$`
+   - Enforces lowercase-with-hyphens (prevents case issues)
+   - Enforces exactly 3-digit sequence number
+   - Matches requirements exactly
+
+3. **Directory Validation**: Correctly validates session-id usage
+   - Extracts session-id from filename
+   - Compares against immediate parent directory name
+   - Blocks mismatches (e.g., TICKET-xxx-001/ directory)
+
+4. **Worktree Detection Fix**: Correct solution
+   - `--git-dir` returns worktree-specific .git (correct)
+   - `--git-common-dir` returns parent .git (incorrect for this use case)
+   - Pattern match on `/worktrees/` path segment is reliable
+
+**Hook Registration**: Properly configured in hooks.json
+- Lines 44-51: Registered for Write tool matcher
+- Timeout: 10 seconds (consistent with other hooks)
+- Command path: hooks/validate-ticket-naming.sh (correct)
+
+**Testing Readiness:**
+All acceptance criteria can be validated:
+- Session-id extraction works from metadata and filename
+- Branch naming: `ticket/{session-id}` (line 235)
+- Worktree directory: `{project}/{session-id}` (line 150)
+- Active directory: `tickets/active/{session-id}/` (line 99, 236)
+- Validation hook blocks invalid names with clear messages
+- Multiple tickets can coexist (001, 002 share same session-id directory)
+
+**No Security Vulnerabilities Found:**
+- No command injection vectors
+- No regex injection vectors
+- No path traversal vectors
+- No timing attacks
+- No race conditions
+- No information disclosure
+- Proper privilege management (uses git commands safely)
+
+This is production-ready code that meets all security, quality, and functional requirements.
+
+**Status Update**: 2025-12-07 17:15 - Changed status to `expediter_review`
 
 # Expediter Section
 
