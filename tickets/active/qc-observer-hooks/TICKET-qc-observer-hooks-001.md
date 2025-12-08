@@ -196,21 +196,81 @@ Instead of 4 large hooks, implement incrementally:
 ## Audit Findings
 
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description
+- [x] `block-unreviewed-edits.sh:258-260` - JSON injection vulnerability in HEREDOC construction. Variables ${tool_name} and ${file_path} are directly interpolated into JSON without escaping. A malicious filename like `test";touch /tmp/pwned;echo "` would break JSON structure and potentially execute commands during subsequent parsing.
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description
+None identified.
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion
+- [x] `observe-violation.sh:64` - Line count is 67 lines (target: ≤50 lines per artifact standard). However, this is a utility script with extensive comments and error handling, making it acceptable for this use case.
+- [x] `block-unreviewed-edits.sh:259` - Empty session_id field. Should capture actual session ID from transcript or environment for correlation with QC Observer use cases.
+
+### Checklist Results
+
+#### Security (CRITICAL)
+- [FAIL] Command injection in JSON construction - Variables not escaped in HEREDOC
+- [PASS] Safe variable interpolation in observe-violation.sh (uses printf correctly)
+- [PASS] No path traversal in storage path (uses readonly vars with HOME)
+- [N/A] Input validation - observe-violation.sh treats all stdin as opaque JSON
+
+#### Fail-Safe Behavior (HIGH)
+- [PASS] Logging failures cannot break blocking (line 262: `2>/dev/null || true`)
+- [PASS] Error suppression on logging operations
+- [PASS] Exit code from observe-violation.sh doesn't affect caller (all paths exit 0)
+
+#### Code Quality (MEDIUM)
+- [PASS] Script is executable (verified: rwx--x--x)
+- [PASS] Follows existing hook patterns (matches block-main-commits.sh structure)
+- [PASS] Proper Bash shebang and set options (set -euo pipefail)
+- [PASS] Minimal changes to block-unreviewed-edits.sh (+7 lines)
+
+#### Schema Compliance (MEDIUM)
+- [PASS] JSON output matches QC-OBSERVER-USE-CASES.md specification
+- [PASS] Required fields present: timestamp, observation_type, cycle, tool, file, violation, severity, blocking
+- [WARN] session_id and agent fields empty/null (should be populated for correlation)
+- [PASS] Correct JSONL format (one object per line via printf '%s\n')
+
+#### Integration (LOW)
+- [PASS] Storage path correct: `~/.novacloud/observations/violations.jsonl`
+- [PASS] Directory creation handles existing directories gracefully (mkdir -p)
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+NEEDS_CHANGES
 
 ## Rationale
-[Why this decision]
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+The implementation demonstrates strong fail-safe design and follows established patterns from existing hooks. However, there is a CRITICAL security vulnerability that must be addressed before approval:
+
+**Critical Issue:** The JSON construction in block-unreviewed-edits.sh (lines 258-260) uses HEREDOC with unescaped variable interpolation. This creates a JSON injection vulnerability where malicious filenames can break the JSON structure.
+
+**Example:**
+```bash
+file_path="/tmp/evil\";touch /tmp/pwned;echo \""
+# Results in broken JSON: {"file":"/tmp/evil";touch /tmp/pwned;echo ""}
+```
+
+**Required Fix:** Use jq for safe JSON construction (jq is already available and used elsewhere in the codebase):
+
+```bash
+violation_json=$(jq -n \
+  --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+  --arg tool "${tool_name}" \
+  --arg file "${file_path}" \
+  '{"timestamp":$ts,"observation_type":"blocking","cycle":"inferred","session_id":"","agent":null,"tool":$tool,"file":$file,"violation":"quality_bypass","severity":"HIGH","blocking":true,"context":{}}')
+```
+
+**Medium Issues:**
+1. Artifact standard tolerance: 67 lines is acceptable for a utility script with safety-critical error handling
+2. Empty session_id: Should capture from transcript for proper correlation (enhancement, not blocker)
+
+**Strengths:**
+- Excellent fail-safe design (logging errors never break blocking)
+- Proper error suppression patterns
+- Minimal integration footprint
+- Correct JSONL format
+- Safe storage path construction
+
+**Status Update**: 2025-12-08 15:10 - Changed status to `creator_rework` - Critical security issue requires fix
 
 # Expediter Section
 
