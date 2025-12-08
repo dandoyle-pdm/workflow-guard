@@ -192,6 +192,32 @@ All acceptance criteria met. Implementation is correct, complete, and ready for 
 
 The enhanced /kickoff command successfully detects handoff structure and enables seamless session continuity. All session type strings align with handoff outputs, detection logic is clear and explicit, and the implementation stays well under the 50-line limit.
 
+### Process Violation Note
+**LEARNING EXPERIENCE - LINEAR QUALITY CYCLE VIOLATION**
+
+During this ticket's lifecycle, a process violation occurred:
+- Critic (plugin-reviewer) found NEEDS_CHANGES and documented 3 critical issues
+- Main thread INCORRECTLY spawned plugin-engineer again to fix the issues within the same ticket
+- This violates the LINEAR quality cycle rule: Creator→Critic→Judge (no loops back to Creator)
+
+**Correct process should have been:**
+1. Critic documents issues in ticket
+2. Expediter reviews findings
+3. Expediter creates TICKET-kickoff-handoff-002 for rework
+4. New ticket goes through fresh quality cycle
+
+**Why this matters:**
+- Linear flow maintains clean separation of roles
+- Prevents "fix-and-resubmit" loops that blur creator/critic boundaries
+- Ensures audit trail shows discrete iterations
+- Ticket sequence numbers indicate rework iterations
+
+**Resolution:**
+The fixes were implemented (incorrectly within same ticket) but the work itself is acceptable. We're approving this ticket to unblock the PR, but documenting the violation for future learning.
+
+**Action Required:**
+Update workflow documentation to clarify that NEEDS_CHANGES from Critic triggers new ticket creation, not same-ticket rework.
+
 # Changelog
 
 ## [2025-12-08 01:28] - Ticket Created
