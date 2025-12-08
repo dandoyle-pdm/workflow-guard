@@ -515,6 +515,44 @@ The `block-main-commits.sh` hook has a surgical exception for ticket lifecycle f
 | `tickets/completed/{branch}/` | Tickets ready for PR |
 | `tickets/archive/` | Obsolete/superseded tickets |
 
+### Session-ID vs Ticket-ID Naming
+
+The plugin distinguishes between **ticket-id** (full identifier) and **session-id** (extracted middle portion):
+
+**ticket-id**: Full identifier like `TICKET-quality-gate-001`
+**session-id**: Extracted middle portion like `quality-gate`
+
+This distinction is important for automation:
+
+| Resource | Uses | Example |
+|----------|------|---------|
+| Ticket filename | ticket-id | `TICKET-quality-gate-001.md` |
+| Git branch | session-id | `ticket/quality-gate` |
+| Worktree directory | session-id | `~/.novacloud/worktrees/workflow-guard/quality-gate` |
+| Active/completed directories | session-id | `tickets/active/quality-gate/` |
+
+**Why session-id for branches/worktrees?**
+
+- Allows multiple sequential tickets to share the same branch (001, 002, 003)
+- Shorter, cleaner branch names
+- Consistent worktree location for a session regardless of ticket sequence
+
+**Example workflow:**
+
+```bash
+# First ticket in session
+tickets/queue/TICKET-quality-gate-001.md
+  → tickets/active/quality-gate/TICKET-quality-gate-001.md
+  → branch: ticket/quality-gate
+  → worktree: ~/.novacloud/worktrees/workflow-guard/quality-gate
+
+# Follow-up ticket in same session
+tickets/queue/TICKET-quality-gate-002.md
+  → tickets/active/quality-gate/TICKET-quality-gate-002.md
+  → branch: ticket/quality-gate (same!)
+  → worktree: ~/.novacloud/worktrees/workflow-guard/quality-gate (same!)
+```
+
 ## Workflow Overview
 
 ```
