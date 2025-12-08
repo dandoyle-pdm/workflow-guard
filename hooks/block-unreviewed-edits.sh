@@ -254,12 +254,29 @@ main() {
     debug_log "AUDIT: Blocked ${tool_name} without quality agent - file=${file_path}"
 
     # Log violation for QC Observer (fail-safe - errors won't break blocking)
+    # Use jq for safe JSON construction to prevent injection attacks
     local violation_json
-    violation_json=$(cat <<EOF
-{"timestamp":"$(date -u '+%Y-%m-%dT%H:%M:%SZ')","observation_type":"blocking","cycle":"inferred","session_id":"","agent":null,"tool":"${tool_name}","file":"${file_path}","violation":"quality_bypass","severity":"HIGH","blocking":true,"context":{}}
-EOF
-)
-    printf '%s' "${violation_json}" | "${SCRIPT_DIR}/observe-violation.sh" 2>/dev/null || true
+    violation_json=$(jq -n \
+        --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+        --arg tool "${tool_name}" \
+        --arg file "${file_path}" \
+        '{
+            "timestamp": $ts,
+            "observation_type": "blocking",
+            "cycle": "inferred",
+            "session_id": "",
+            "agent": null,
+            "tool": $tool,
+            "file": $file,
+            "violation": "quality_bypass",
+            "severity": "HIGH",
+            "blocking": true,
+            "context": {}
+        }' 2>/dev/null || true)
+
+    if [[ -n "${violation_json}" ]]; then
+        printf '%s' "${violation_json}" | "${SCRIPT_DIR}/observe-violation.sh" 2>/dev/null || true
+    fi
 
     # Exit code 2 blocks the tool execution
     exit 2
