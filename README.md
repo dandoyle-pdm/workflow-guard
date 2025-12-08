@@ -398,6 +398,31 @@ Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this
           "type": "command",
           "command": "hooks/enforce-pr-workflow.sh",
           "timeout": 10
+        },
+        {
+          "type": "command",
+          "command": "hooks/enforce-ticket-completion.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "mcp__git__git_commit|mcp__git__git_add",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-mcp-git-commits.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/confirm-code-edits.sh",
+          "timeout": 10
         }
       ]
     },
@@ -408,6 +433,16 @@ Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this
           "type": "command",
           "command": "hooks/block-unreviewed-edits.sh",
           "timeout": 5
+        }
+      ]
+    },
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/validate-ticket-naming.sh",
+          "timeout": 10
         }
       ]
     }
