@@ -185,3 +185,9 @@ The enhancement is compact (added ~12 substantive lines) and maintains single re
 ## [2025-12-07 23:30] - Activated
 - Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/kickoff-handoff
 - Branch: ticket/kickoff-handoff
+
+## [2025-12-08 01:45] - Rework: Fixed Handoff Detection Issues
+- **Session Type Mismatch:** Changed DEBUG→DEBUGGING, HOTFIX→EMERGENCY HOTFIX to match handoff output
+- **Invalid Agent Reference:** Clarified INVESTIGATION→R4(fast-path, no agent) instead of "(explore)"
+- **Detection Threshold:** Specified explicit threshold "2+ markers present"
+- Status: ready for re-review

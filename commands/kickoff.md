@@ -10,15 +10,15 @@ $ARGUMENTS
 
 ## Handoff Detection
 
-Check if input contains handoff markers:
+Check if input contains 2+ handoff markers:
 - "Session Type:" or "## Session Type" or "Session Continuation:"
 - "Next Steps:" or "## Next Steps"
 - "TICKET-" references
 - "Current Understanding:" or "## Current Understanding"
 
-If detected:
+If detected (2+ markers present):
 1. **Extract session type** from "Session Type:" or "Session Continuation:" line
-2. **Map to quality chain**: DEBUG→R1(code-tester), DEVELOPMENT→R1(code-developer), HOTFIX→R5(code-developer), INVESTIGATE→R4(explore)
+2. **Map to quality chain**: DEBUGGING→R1(code-tester), DEVELOPMENT→R1(code-developer), EMERGENCY HOTFIX→R5(code-developer), INVESTIGATION→R4(fast-path, no agent)
 3. **Extract ticket ref** from "Ticket Reference:" or scan for "TICKET-{id}-{seq}"
 4. **Extract next steps** from "Next Steps:" section
 5. **Pass full context** to delegated agent (include Current Understanding, Changes Made, etc.)
