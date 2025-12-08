@@ -47,7 +47,7 @@ Each handoff command automatically:
 
 ### Hooks
 
-Four PreToolUse hooks enforce workflow discipline and quality cycles:
+Seven PreToolUse hooks enforce workflow discipline and quality cycles:
 
 #### block-main-commits
 
