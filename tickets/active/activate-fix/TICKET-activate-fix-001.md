@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix activate-ticket.sh to use session-id for branch/worktree naming
 cycle_type: development
-status: critic_review
+status: expediter_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 11:50
 created: 2025-12-07 11:45
@@ -176,10 +176,42 @@ None found.
    - **Assessment**: Fix is correct and secure
 
 ## Approval Decision
-**APPROVED**
+**APPROVED** (Re-review after queue directory rework)
 
 ## Rationale
 
+**Re-review Summary (2025-12-07 18:50):**
+The plugin-engineer successfully fixed the queue directory validation issue. The rework adds a clean exception for tickets/queue/ paths while maintaining security and correctness for active/completed directories.
+
+**Rework Analysis:**
+
+1. **Queue Exception Implementation** (lines 68-73)
+   - Added early return for `tickets/queue/` paths before session-id extraction
+   - Proper placement: checks occur AFTER tickets/ validation, BEFORE session-id extraction
+   - Clean separation of concerns: queue only validates filename, not directory structure
+   - Debug logging confirms exception behavior for troubleshooting
+   - **Assessment**: Correctly implemented, no bypass vulnerabilities introduced
+
+2. **Logic Flow Verification**
+   - Queue path: Filename validation only (lines 249-254) → exit early from validate_directory() (lines 68-73)
+   - Active/Completed paths: Filename validation (lines 249-254) + directory validation (lines 76-91)
+   - Non-ticket paths: Skip all validation (lines 232-235)
+   - **Assessment**: Logic flow is correct and follows requirements
+
+3. **Security Impact Analysis**
+   - No new command injection vectors introduced
+   - No regex bypass opportunities (exception uses safe regex pattern match)
+   - No path traversal vulnerabilities (still validates tickets/ prefix)
+   - Exception is narrowly scoped to tickets/queue/ only
+   - **Assessment**: Security posture maintained, no vulnerabilities introduced
+
+4. **Error Message Updates** (lines 141-143, 150)
+   - Clarifies queue exemption in directory validation error
+   - Adds example showing queue as flat directory structure
+   - Accurate description: "files are placed there before activation"
+   - **Assessment**: Clear, accurate, helpful guidance
+
+**Original Review (2025-12-07 17:15):**
 This implementation demonstrates excellent security practices and follows all established patterns from existing hooks:
 
 **Security Analysis:**
@@ -272,7 +304,8 @@ All acceptance criteria can be validated:
 
 This is production-ready code that meets all security, quality, and functional requirements.
 
-**Status Update**: 2025-12-07 17:15 - Changed status to `expediter_review`
+**Status Update**: 2025-12-07 17:15 - Changed status to `expediter_review` (initial review)
+**Status Update**: 2025-12-07 18:50 - Re-review complete after queue directory rework, changed status to `expediter_review`
 
 # Expediter Section
 
