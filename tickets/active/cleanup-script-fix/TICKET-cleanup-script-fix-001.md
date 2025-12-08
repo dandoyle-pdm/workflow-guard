@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Fix variable capture bug in cleanup-merged-ticket.sh
 cycle_type: development
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-07 21:49
 created: 2025-12-07 23:39
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/cleanup-script-fix
 ---
 
 # Requirements
@@ -134,3 +134,7 @@ Option 1 is cleanest - log_info should go to stderr anyway for functions that re
 - Bug identified during TICKET-docs-update-001 cleanup
 - Root cause analysis completed
 - Fix options documented
+
+## [2025-12-07 21:49] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/cleanup-script-fix
+- Branch: ticket/cleanup-script-fix
