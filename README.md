@@ -92,6 +92,21 @@ Ensures ticket is in `tickets/completed/` before PR creation.
 - Blocks if ticket is still in `tickets/active/`
 - Allows non-ticket work to proceed (no ticket found = warning only)
 
+#### block-mcp-git-commits
+
+Blocks MCP git tools (`mcp__git__git_commit`, `mcp__git__git_add`) on protected branches.
+
+**Behavior:**
+- Detects MCP git commit/add operations
+- Checks current branch against protected list
+- Blocks with error message on protected branches
+- Complements `block-main-commits` for comprehensive git protection
+- MCP tools bypass the Bash tool, requiring dedicated hook matcher
+
+**Why this hook exists:**
+
+MCP git tools provide direct git operations that bypass the standard Bash tool entirely. Without this hook, branch protection could be circumvented by using MCP tools instead of Bash git commands.
+
 #### block-unreviewed-edits
 
 Enforces quality agent context for file modifications (Edit, Write, NotebookEdit).
