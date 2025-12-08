@@ -6,9 +6,9 @@ sequence: 001
 parent_ticket: null
 title: Update README.md and documentation with current hook inventory
 cycle_type: documentation
-status: open
+status: in_progress
 created: 2025-12-07 17:55
-worktree_path: null
+worktree_path: ~/.novacloud/worktrees/workflow-guard/docs-update
 ---
 
 # Requirements
@@ -18,7 +18,7 @@ worktree_path: null
 Update all documentation to reflect the current state of workflow-guard after PRs #7 and #8 merged:
 
 ### README.md Updates
-1. Update hook count from "Four" to "Six" PreToolUse hooks
+1. Update hook count from "Four" to "Seven" PreToolUse hooks (actual count verified)
 2. Add documentation for `block-unreviewed-edits.sh` (quality gate hook)
 3. Add documentation for `validate-ticket-naming.sh` (naming validation hook)
 4. Document the quality agent detection mechanism
@@ -46,7 +46,7 @@ Update all documentation to reflect the current state of workflow-guard after PR
 - `complete-ticket.sh` fixed worktree detection
 
 ## Acceptance Criteria
-- [ ] README.md hook count updated to 6
+- [ ] README.md hook count updated to 7
 - [ ] block-unreviewed-edits.sh fully documented
 - [ ] validate-ticket-naming.sh fully documented
 - [ ] Ticket naming convention documented
@@ -123,6 +123,10 @@ Users and future sessions need accurate documentation to understand the current 
 
 # Changelog
 
+## [2025-12-07 18:15] - Ticket Activated
+- Moved to active/docs-update/, worktree created
+- Corrected hook count: 7 functional hooks (not 6)
+
 ## [2025-12-07 17:55] - Ticket Created
 - Documentation update needed after PRs #7 and #8 merged
-- Six hooks now exist, README says four
+- Seven hooks now exist, README says four
