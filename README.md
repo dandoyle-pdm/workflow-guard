@@ -107,6 +107,33 @@ Blocks MCP git tools (`mcp__git__git_commit`, `mcp__git__git_add`) on protected 
 
 MCP git tools provide direct git operations that bypass the standard Bash tool entirely. Without this hook, branch protection could be circumvented by using MCP tools instead of Bash git commands.
 
+#### confirm-code-edits
+
+Requires user confirmation before modifying code files via Edit or Write tools.
+
+**Behavior:**
+- Detects Edit and Write operations on code files
+- Prompts for confirmation before proceeding with edits
+- Allows workflow metadata files without confirmation (tickets, handoffs)
+- Allows test files without confirmation
+- Provides audit trail of confirmed edits
+- Configurable code file extensions via `CODE_FILE_EXTENSIONS` env var
+
+**Default code extensions:**
+`go`, `py`, `sh`, `js`, `ts`, `tsx`, `jsx`
+
+**Exception files (always allowed):**
+- Ticket files: Any file in `tickets/` directory
+- Test files: Files matching patterns like `_test.go`, `*.test.js`, `*.spec.ts`
+
+**Environment variables:**
+- `CODE_FILE_EXTENSIONS` - Comma-separated list of extensions to protect (default: `go,py,sh,js,ts,tsx,jsx`)
+- `SKIP_EDIT_CONFIRMATION` - Set to `true` to bypass confirmation (use with caution)
+
+**Use case:**
+
+Prevents unintended code modifications during investigation or read-only workflows. When Claude is exploring code to answer questions, this hook prevents accidental edits unless explicitly requested by the user.
+
 #### block-unreviewed-edits
 
 Enforces quality agent context for file modifications (Edit, Write, NotebookEdit).
