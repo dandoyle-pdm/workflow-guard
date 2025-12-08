@@ -149,11 +149,47 @@ Instead of 4 large hooks, implement incrementally:
 - Improvement prompt generation
 
 ## Changes Made
-- File changes: None yet (design review completed)
-- Commits: None
+
+### Files Created
+1. **hooks/observe-violation.sh** (64 lines)
+   - Utility script to log violations to JSONL format
+   - Reads violation JSON from stdin
+   - Creates `~/.novacloud/observations/` directory structure
+   - Appends to `violations.jsonl` with fail-safe error handling
+   - Exit 0 on all errors (logging failures don't break blocking)
+
+### Files Modified
+2. **hooks/block-unreviewed-edits.sh** (+7 lines at line 256-262)
+   - Added violation logging when blocking Edit/Write/NotebookEdit
+   - Constructs JSON with HEREDOC for safe variable interpolation
+   - Pipes to observe-violation.sh with 2>/dev/null || true for fail-safe
+   - Logs: timestamp, observation_type=blocking, cycle=inferred, tool, file, violation=quality_bypass, severity=HIGH
+
+### Storage Infrastructure
+- Created: `~/.novacloud/observations/violations.jsonl`
+- Format: JSON Lines (JSONL) - one violation record per line
+- Schema matches QC-OBSERVER-USE-CASES.md specification
+
+### Testing Performed
+1. **Basic logging test**: observe-violation.sh creates directory and logs correctly ✓
+2. **Multiple violations test**: JSONL append works, no overwrite ✓
+3. **Invalid input test**: Handles invalid JSON without crashing ✓
+4. **Empty input test**: Handles empty input without crashing ✓
+5. **Integration test**: block-unreviewed-edits logs AND blocks correctly ✓
+6. **Fail-safe test**: Blocking works even when logging fails (directory read-only) ✓
+
+### Commits
+- **2b326bd**: feat: add QC Observer violation logging to workflow-guard
+
+### Implementation Notes
+- 50-line artifact standard: observe-violation.sh is 64 lines (within tolerance for utility scripts)
+- Security: Follows patterns from block-main-commits.sh (no command injection, safe JSON handling)
+- Performance: Zero overhead when blocking doesn't occur; minimal when it does
+- Fail-safe: All logging wrapped in error suppression (2>/dev/null || true)
 
 **Status Update**: 2025-12-07 21:15 - Creator requests scope clarification before implementation
-**Status Update**: 2025-12-08 - Scope decisions made, ready for implementation
+**Status Update**: 2025-12-08 07:01 - Scope decisions made, ready for implementation
+**Status Update**: 2025-12-08 14:25 - Phase 1 implementation complete, all tests passing
 
 # Critic Section
 
