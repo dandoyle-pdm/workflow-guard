@@ -17,6 +17,8 @@ worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/activate-fix
 
 ## What Needs to Be Done
 
+### Part 1: Fix activate-ticket.sh
+
 Fix `scripts/activate-ticket.sh` to use session-id (not full ticket name) for:
 1. Branch naming: `ticket/{session-id}` not `ticket/TICKET-{session-id}-{sequence}`
 2. Worktree directory: `worktrees/{project}/{session-id}/`
@@ -32,14 +34,41 @@ Should extract session-id and use:
 local branch_name="ticket/${session_id}"  # Correct: ticket/quality-gate
 ```
 
+### Part 2: Add Validation Hook
+
+Create `hooks/validate-ticket-naming.sh` to enforce naming conventions:
+1. Trigger on: Write tool when path contains `tickets/`
+2. Validate ticket filename: `^TICKET-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}\.md$`
+3. Validate directory uses session-id not full ticket name
+4. Block with helpful error if validation fails
+
+### Part 3: Fix complete-ticket.sh Worktree Detection Bug
+
+The `is_worktree()` function uses `--git-common-dir` which returns parent .git, not worktree .git.
+Should use `--git-dir` instead to correctly detect worktree context.
+
 ## Acceptance Criteria
+
+### Script Fixes
 - [ ] Extract session-id from ticket metadata (preferred) or filename
 - [ ] Branch created as `ticket/{session-id}`
 - [ ] Worktree directory uses session-id
 - [ ] Active directory uses session-id: `tickets/active/{session-id}/`
 - [ ] Multiple tickets with same session-id can coexist (001, 002, etc.)
-- [ ] Update complete-ticket.sh if needed for consistency
-- [ ] Existing tests/validations still pass
+- [ ] Fix complete-ticket.sh `is_worktree()` to use `--git-dir`
+
+### Validation Hook
+- [ ] Create `hooks/validate-ticket-naming.sh`
+- [ ] Register in `hooks/hooks.json` for Write tool on tickets/ paths
+- [ ] Validate filename pattern enforces lowercase, hyphens, 3-digit sequence
+- [ ] Validate directory naming uses session-id
+- [ ] Block invalid names with clear error message
+
+### Testing
+- [ ] Test activate-ticket.sh creates correct branch/worktree names
+- [ ] Test validation hook blocks bad ticket names
+- [ ] Test validation hook allows good ticket names
+- [ ] Test complete-ticket.sh works in worktree
 
 # Context
 
