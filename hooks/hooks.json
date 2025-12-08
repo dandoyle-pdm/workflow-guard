@@ -41,6 +41,16 @@
       ]
     },
     {
+      "matcher": "Edit|Write|NotebookEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-unreviewed-edits.sh",
+          "timeout": 5
+        }
+      ]
+    },
+    {
       "matcher": "Write",
       "hooks": [
         {
