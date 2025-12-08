@@ -86,10 +86,82 @@ The enhancement is compact (added ~12 substantive lines) and maintains single re
 # Critic Section
 
 ## Audit Findings
-[To be filled during review]
+
+### Correctness Issues
+
+1. **Session Type Mismatch (CRITICAL)**
+   - kickoff.md maps: DEBUG, DEVELOPMENT, HOTFIX, INVESTIGATE
+   - handoff commands output: DEBUGGING, DEVELOPMENT, EMERGENCY HOTFIX, INVESTIGATION
+   - **Issue:** "DEBUG" won't match "DEBUGGING", "HOTFIX" won't match "EMERGENCY HOTFIX"
+   - **Impact:** Handoff detection will fail for debug and hotfix sessions
+   - **Fix Required:** Align session type strings between handoff output and kickoff parsing
+
+2. **Invalid Agent Reference**
+   - Line 21 maps INVESTIGATE→R4(explore)
+   - Quality Recipes table (line 42) shows R4 as "None" with no agent
+   - **Issue:** "explore" is not a defined agent
+   - **Impact:** Unclear what agent to invoke for INVESTIGATE sessions
+   - **Fix Required:** Correct R4 mapping or define "explore" agent
+
+3. **Detection Logic Ambiguity**
+   - Lines 13-17 list detection markers but don't specify threshold
+   - **Issue:** Does detection require ALL markers or just ONE?
+   - **Impact:** Unclear when handoff path is triggered vs generic path
+   - **Fix Required:** Specify detection criteria (e.g., "If 2+ markers present")
+
+### Completeness - PARTIAL
+
+- All four session types are covered in mapping
+- Extraction steps are comprehensive (type, ticket, next steps, context)
+- Fallback to generic analysis is mentioned but not detailed
+
+### Clarity Issues
+
+1. **Dual-Path Not Explicit**
+   - Handoff path is documented (lines 19-25)
+   - Generic path is only referenced in line 29 "OR generic work type"
+   - **Issue:** No explicit "else" branch explaining generic analysis
+   - **Fix Recommended:** Add explicit fallback logic documentation
+
+2. **Vague Context Passing**
+   - Line 24: "Pass full context to delegated agent"
+   - **Issue:** What constitutes "full context"?
+   - **Fix Recommended:** Specify which sections to pass (Current Understanding, Changes Made, etc.)
+
+### Line Limit - COMPLIANT
+
+- Counted 29 substantive lines (excludes empty, headers, table formatting)
+- Well under 50 line limit
+- **Status:** PASS
+
+### Consistency - GOOD
+
+- Maintains 5-step process structure from original kickoff.md
+- Preserves "Use ultrathink" instruction
+- Follows command pattern: Description → Input → Logic → Process → Recipes → Rules
+- Quality Recipes table unchanged (maintains compatibility)
+- **Status:** PASS
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+
+**NEEDS_CHANGES**
+
+### Required Fixes
+
+1. **Session Type Alignment:** Change mapping to match handoff output exactly
+   - DEBUG → DEBUGGING
+   - HOTFIX → EMERGENCY HOTFIX (or strip "EMERGENCY" from handoff output)
+
+2. **R4 Agent Clarification:** Either:
+   - Remove "(explore)" and keep as "None" (read-only, no agent)
+   - OR define what "explore" means
+
+3. **Detection Threshold:** Specify how many markers constitute a handoff
+
+### Recommended Improvements
+
+1. Document generic fallback path explicitly
+2. Specify what "full context" means in agent delegation
 
 # Expediter Section
 
