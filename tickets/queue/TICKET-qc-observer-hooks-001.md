@@ -73,13 +73,52 @@ const isInQualityAgent = !!agentMatch;
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+### Key Findings
+
+1. **Blocking Already Exists**: `block-unreviewed-edits.sh` already implements PreToolUse blocking for Edit/Write/NotebookEdit without quality agent context. This makes `qc-observe-hook` redundant.
+
+2. **50-Line Standard Violation**: Initial designs were 150-300 lines each - violates artifact standard. Need to decompose differently.
+
+3. **Language Mismatch**: Ticket specified JavaScript but all existing hooks are Bash. Should maintain consistency.
+
+### Recommended Scope Reduction
+
+Instead of 4 large hooks, implement incrementally:
+
+**Phase 1** (this ticket):
+- Add violation logging to existing `block-unreviewed-edits.sh`
+- Create `~/.novacloud/observations/` storage infrastructure
+- One focused capture function, ≤50 lines
+
+**Phase 2** (new ticket):
+- SessionStart context injection
+- Pattern aggregation
+
+**Phase 3** (new ticket):
+- SessionEnd summary generation
+- Improvement prompt generation
+
+### What Already Works
+
+| Original Hook | Status | Existing Implementation |
+|---------------|--------|------------------------|
+| qc-observe-hook | ✅ EXISTS | block-unreviewed-edits.sh |
+| qc-capture-hook | 🆕 NEEDED | Add to blocking hook |
+| qc-context-hook | 🆕 NEEDED | Phase 2 |
+| qc-summary-hook | 🆕 NEEDED | Phase 3 |
+
+## Questions/Concerns
+
+1. Should we add logging to existing `block-unreviewed-edits.sh` or create separate capture hook?
+2. Is phased approach acceptable given 50-line constraint?
+3. Bash vs JavaScript - recommend Bash for consistency
 
 ## Changes Made
-- File changes:
-- Commits:
+- File changes: None yet (design review completed)
+- Commits: None
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Status Update**: 2025-12-07 21:15 - Creator requests scope clarification before implementation
 
 # Critic Section
 
