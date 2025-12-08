@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-linear-qc-docs
+ticket_id: TICKET-linear-qc-docs-001
 session_id: linear-qc-docs
-sequence: {assigned at activation}
+sequence: 001
 parent_ticket: null
 title: Document LINEAR quality cycle rule - no loops, rework creates -002
 cycle_type: documentation
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-07 23:58
 created: 2025-12-08 01:45
 worktree_path: null
 ---
