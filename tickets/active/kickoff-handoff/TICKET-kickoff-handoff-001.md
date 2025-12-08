@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-kickoff-handoff
+ticket_id: TICKET-kickoff-handoff-001
 session_id: kickoff-handoff
-sequence: {assigned at activation}
+sequence: 001
 parent_ticket: TICKET-kickoff-cmd-001
 title: Make /kickoff handoff-aware for seamless session continuity
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-07 23:30
 created: 2025-12-08 01:28
 worktree_path: null
 ---
