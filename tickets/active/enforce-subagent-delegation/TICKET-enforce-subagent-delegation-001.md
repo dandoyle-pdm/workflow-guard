@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Hook to enforce subagent delegation for code edits
 cycle_type: development
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-08 16:19
 created: 2024-12-08 09:45
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/enforce-subagent-delegation
 ---
 
 # Requirements
@@ -89,3 +89,7 @@ Direct edits bypass:
 ## 2024-12-08 09:45 - Main Thread
 - Ticket created in queue/
 - Awaiting activation and agent delegation
+
+## [2025-12-08 16:19] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/enforce-subagent-delegation
+- Branch: ticket/enforce-subagent-delegation
