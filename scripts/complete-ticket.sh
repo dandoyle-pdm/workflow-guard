@@ -35,9 +35,9 @@ get_current_branch() {
 }
 
 is_worktree() {
-    local git_common_dir
-    git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null)
-    [[ "$git_common_dir" == *".git/worktrees/"* ]]
+    local git_dir
+    git_dir=$(git rev-parse --git-dir 2>/dev/null)
+    [[ "$git_dir" == *".git/worktrees/"* ]]
 }
 
 find_active_ticket() {
