@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-kickoff-cmd
+ticket_id: TICKET-kickoff-cmd-001
 session_id: kickoff-cmd
-sequence: {assigned at activation}
+sequence: 001
 parent_ticket: null
 title: Create /kickoff slash command for session coordination
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-07 23:02
 created: 2025-12-07 20:45
 worktree_path: null
 ---
