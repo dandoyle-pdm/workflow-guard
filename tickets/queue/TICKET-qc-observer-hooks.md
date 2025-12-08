@@ -1,8 +1,8 @@
 ---
 # Metadata
-ticket_id: TICKET-qc-observer-hooks-001
+ticket_id: TICKET-qc-observer-hooks
 session_id: qc-observer-hooks
-sequence: 001
+sequence: {assigned at activation}
 parent_ticket: null
 title: Implement QC Observer hooks for quality pattern tracking
 cycle_type: development

@@ -46,13 +46,38 @@ validate_ticket() {
 
     local filename
     filename=$(basename "$ticket_path")
-    if [[ ! "$filename" =~ ^TICKET-[a-zA-Z0-9-]+-[0-9]+\.md$ ]]; then
+    # Queue tickets use format: TICKET-{session-id}.md (no sequence)
+    if [[ ! "$filename" =~ ^TICKET-[a-zA-Z0-9-]+\.md$ ]]; then
         log_error "Invalid ticket filename format: $filename"
-        log_error "Expected: TICKET-{session-id}-{sequence}.md"
+        log_error "Expected: TICKET-{session-id}.md"
         return 1
     fi
 
     return 0
+}
+
+# Determine next sequence number for a session
+get_next_sequence() {
+    local session_id="$1"
+    local main_repo="$2"
+    local max_seq=0
+
+    # Check existing tickets in active and completed directories
+    for dir in "tickets/active/${session_id}" "tickets/completed/${session_id}"; do
+        if [[ -d "${main_repo}/${dir}" ]]; then
+            for ticket in "${main_repo}/${dir}"/TICKET-*-[0-9][0-9][0-9].md; do
+                if [[ -f "$ticket" ]]; then
+                    local seq
+                    seq=$(basename "$ticket" | sed 's/.*-\([0-9]\{3\}\)\.md$/\1/' | sed 's/^0*//')
+                    if [[ -n "$seq" && "$seq" -gt "$max_seq" ]]; then
+                        max_seq=$seq
+                    fi
+                fi
+            done
+        fi
+    done
+
+    printf "%03d" $((max_seq + 1))
 }
 
 phase1_claim() {
@@ -60,6 +85,7 @@ phase1_claim() {
     local ticket_id="$2"
     local branch_dir="$3"
     local main_repo="$4"
+    local session_id="$5"
     local max_retries=3
     local retry=0
 
@@ -96,10 +122,23 @@ phase1_claim() {
             return 1
         fi
 
-        mkdir -p "tickets/active/${branch_dir}"
-        git mv "$ticket_path" "tickets/active/${branch_dir}/"
+        # Determine sequence number for this ticket
+        local sequence
+        sequence=$(get_next_sequence "$session_id" "$main_repo")
+        local new_ticket_id="TICKET-${session_id}-${sequence}"
+        local new_filename="${new_ticket_id}.md"
 
-        local active_ticket="tickets/active/${branch_dir}/$(basename "$ticket_path")"
+        log_info "Assigning sequence: ${sequence} -> ${new_ticket_id}"
+
+        mkdir -p "tickets/active/${branch_dir}"
+        # Move and rename: TICKET-session-id.md -> TICKET-session-id-001.md
+        git mv "$ticket_path" "tickets/active/${branch_dir}/${new_filename}"
+
+        local active_ticket="tickets/active/${branch_dir}/${new_filename}"
+
+        # Update ticket_id in the file metadata
+        sed -i "s/^ticket_id:.*/ticket_id: ${new_ticket_id}/" "$active_ticket"
+        sed -i "s/^sequence:.*/sequence: ${sequence}/" "$active_ticket"
         local timestamp
         timestamp=$(date '+%Y-%m-%d %H:%M' | tr -d '\n\r')
         local user
@@ -115,7 +154,7 @@ phase1_claim() {
         fi
 
         git add tickets/
-        git commit -m "claim: ${ticket_id}"
+        git commit -m "claim: ${new_ticket_id}"
 
         if git push origin main 2>&1; then
             log_success "Ticket claimed successfully on main"
@@ -209,7 +248,9 @@ main() {
 
     if [[ -z "$ticket_path" ]]; then
         printf 'Usage: activate-ticket.sh <ticket-path> [project-name]\n'
-        printf '\nExample: activate-ticket.sh tickets/queue/TICKET-foo-001.md myproject\n'
+        printf '\nExample: activate-ticket.sh tickets/queue/TICKET-my-feature.md myproject\n'
+        printf '\nNote: Queue tickets use format TICKET-{session-id}.md (no sequence).\n'
+        printf '      Sequence (-001, -002, etc.) is assigned automatically at activation.\n'
         exit 1
     fi
 
@@ -218,18 +259,18 @@ main() {
 
     local ticket_filename
     ticket_filename=$(basename "$ticket_path")
-    local ticket_id="${ticket_filename%.md}"
+    local queue_ticket_id="${ticket_filename%.md}"
 
     # Extract session_id from ticket metadata (preferred) or filename
     local session_id
     if [[ -f "$ticket_path" ]] && session_id=$(grep "^session_id:" "$ticket_path" | head -1 | cut -d: -f2 | tr -d ' \t\n\r'); then
         if [[ -z "$session_id" ]]; then
-            # Fallback to extracting from filename: TICKET-{session-id}-{sequence}
-            session_id=$(echo "$ticket_id" | sed 's/^TICKET-//;s/-[0-9]\{3\}$//')
+            # Fallback to extracting from filename: TICKET-{session-id}.md (queue format)
+            session_id=$(echo "$queue_ticket_id" | sed 's/^TICKET-//')
         fi
     else
-        # Fallback to extracting from filename: TICKET-{session-id}-{sequence}
-        session_id=$(echo "$ticket_id" | sed 's/^TICKET-//;s/-[0-9]\{3\}$//')
+        # Fallback to extracting from filename: TICKET-{session-id}.md (queue format)
+        session_id=$(echo "$queue_ticket_id" | sed 's/^TICKET-//')
     fi
 
     local branch_name="ticket/${session_id}"
@@ -243,13 +284,25 @@ main() {
     fi
 
     log_info "============================================"
-    log_info "Activating ticket: $ticket_id"
+    log_info "Activating ticket: $queue_ticket_id"
     log_info "Session ID: $session_id"
     log_info "Project: $project"
     log_info "Branch: $branch_name"
     log_info "============================================"
 
-    phase1_claim "$ticket_path" "$ticket_id" "$branch_dir" "$main_repo" || exit 1
+    phase1_claim "$ticket_path" "$queue_ticket_id" "$branch_dir" "$main_repo" "$session_id" || exit 1
+
+    # Find the actual ticket_id after sequence assignment
+    cd "$main_repo"
+    local active_ticket
+    active_ticket=$(find "tickets/active/${branch_dir}" -name "TICKET-*.md" 2>/dev/null | head -1)
+    local ticket_id
+    if [[ -n "$active_ticket" ]]; then
+        ticket_id=$(basename "$active_ticket" .md)
+    else
+        ticket_id="TICKET-${session_id}-001"
+    fi
+
     phase2_activate "$ticket_id" "$branch_name" "$branch_dir" "$project" "$main_repo" || exit 1
 
     exit 0

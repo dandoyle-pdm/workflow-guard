@@ -22,10 +22,13 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly CLAUDE_HOME="${HOME}/.claude"
 readonly DEBUG_LOG="${CLAUDE_HOME}/logs/hooks-debug.log"
 
-# Ticket filename pattern: TICKET-{session-id}-{sequence}.md
+# Ticket filename patterns:
+# Queue pattern: TICKET-{session-id}.md (no sequence - added at activation)
+# Active/Completed pattern: TICKET-{session-id}-{sequence}.md (with sequence)
 # session-id: lowercase letters, numbers, hyphens (no uppercase)
 # sequence: exactly 3 digits
-readonly TICKET_FILENAME_PATTERN='^TICKET-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}\.md$'
+readonly TICKET_QUEUE_PATTERN='^TICKET-[a-z0-9]+(-[a-z0-9]+)*\.md$'
+readonly TICKET_ACTIVE_PATTERN='^TICKET-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}\.md$'
 
 # Create log directory
 mkdir -p "$(dirname "${DEBUG_LOG}")" 2>/dev/null || true
@@ -36,19 +39,30 @@ debug_log() {
 }
 
 # Extract session-id from ticket filename
-# TICKET-quality-gate-001.md -> quality-gate
+# TICKET-quality-gate-001.md -> quality-gate (active/completed format)
+# TICKET-quality-gate.md -> quality-gate (queue format)
 extract_session_id() {
     local filename="$1"
-    # Remove TICKET- prefix and -NNN.md suffix
-    echo "$filename" | sed 's/^TICKET-//;s/-[0-9]\{3\}\.md$//'
+    # Remove TICKET- prefix and optional -NNN.md suffix (handles both queue and active formats)
+    echo "$filename" | sed 's/^TICKET-//;s/-[0-9]\{3\}\.md$/.md/;s/\.md$//'
 }
 
 # Validate ticket filename pattern
+# Uses different patterns for queue vs active/completed
 validate_filename() {
     local filename="$1"
+    local file_path="$2"
 
-    if [[ ! "$filename" =~ $TICKET_FILENAME_PATTERN ]]; then
-        return 1
+    # Queue files use simpler pattern (no sequence)
+    if [[ "$file_path" =~ tickets/queue/ ]]; then
+        if [[ ! "$filename" =~ $TICKET_QUEUE_PATTERN ]]; then
+            return 1
+        fi
+    else
+        # Active/completed files require sequence
+        if [[ ! "$filename" =~ $TICKET_ACTIVE_PATTERN ]]; then
+            return 1
+        fi
     fi
 
     return 0
@@ -109,10 +123,34 @@ File: ${file_path}
 EOFMSG
 
     if [[ "$error_type" == "filename" ]]; then
-        cat <<EOFMSG
+        if [[ "$file_path" =~ tickets/queue/ ]]; then
+            cat <<EOFMSG
+ERROR: Invalid ticket filename format for queue
+
+Queue tickets must follow this pattern:
+  TICKET-{session-id}.md
+
+Where:
+  - session-id: lowercase letters, numbers, hyphens (e.g., quality-gate, activate-fix)
+  - NO sequence number (sequence is added automatically at activation)
+
+Examples of VALID queue filenames:
+  ✓ TICKET-quality-gate.md
+  ✓ TICKET-activate-fix.md
+  ✓ TICKET-my-feature.md
+
+Examples of INVALID queue filenames:
+  ✗ TICKET-Quality-Gate.md      (uppercase not allowed)
+  ✗ TICKET-quality_gate.md      (underscores not allowed)
+  ✗ TICKET-quality-gate-001.md  (no sequence in queue - added at activation)
+  ✗ ticket-quality-gate.md      (must start with TICKET-)
+
+EOFMSG
+        else
+            cat <<EOFMSG
 ERROR: Invalid ticket filename format
 
-The filename must follow this pattern:
+Active/completed tickets must follow this pattern:
   TICKET-{session-id}-{sequence}.md
 
 Where:
@@ -132,6 +170,7 @@ Examples of INVALID filenames:
   ✗ ticket-quality-gate-001.md  (must start with TICKET-)
 
 EOFMSG
+        fi
     elif [[ "$error_type" == "directory" ]]; then
         local session_id
         session_id=$(extract_session_id "$filename")
@@ -147,7 +186,7 @@ Expected directory: tickets/*/${session_id}/
 Found directory: $(dirname "$file_path")
 
 Examples of CORRECT paths:
-  ✓ tickets/queue/TICKET-quality-gate-001.md           (queue is flat, no subdirs)
+  ✓ tickets/queue/TICKET-quality-gate.md               (queue: no sequence, flat)
   ✓ tickets/active/quality-gate/TICKET-quality-gate-001.md
   ✓ tickets/active/quality-gate/TICKET-quality-gate-002.md
   ✓ tickets/completed/activate-fix/TICKET-activate-fix-001.md
@@ -247,7 +286,7 @@ main() {
     debug_log "Validating ticket file: ${filename}"
 
     # Validate filename pattern
-    if ! validate_filename "${filename}"; then
+    if ! validate_filename "${filename}" "${file_path}"; then
         generate_error_message "${file_path}" "${filename}" "filename" >&2
         debug_log "AUDIT: Blocked invalid ticket filename - file=${file_path}"
         exit 2

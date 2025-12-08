@@ -1,10 +1,12 @@
 <!--
 TICKET LIFECYCLE
 
-1. Create ticket in tickets/queue/
-2. Activate: ./scripts/activate-ticket.sh tickets/queue/TICKET-xxx.md
-   - Creates worktree at $WORKTREE_BASE/<project>/<branch>
-   - Moves ticket to tickets/active/<branch>/ in worktree
+1. Create ticket in tickets/queue/ as TICKET-{session-id}.md (no sequence number)
+2. Activate: ./scripts/activate-ticket.sh tickets/queue/TICKET-{session-id}.md
+   - Assigns sequence number (001, 002, etc.) automatically
+   - Renames to TICKET-{session-id}-{sequence}.md
+   - Creates worktree at $WORKTREE_BASE/<project>/<session-id>
+   - Moves ticket to tickets/active/<session-id>/ in worktree
    - Sets status to in_progress
 
 3. Work in worktree (quality cycle: Creator → Critic → Judge)
@@ -23,9 +25,9 @@ TICKET LIFECYCLE
 -->
 ---
 # Metadata
-ticket_id: TICKET-{session-id}-{sequence}
+ticket_id: TICKET-{session-id}
 session_id: {descriptive-session-id}
-sequence: {001, 002, etc}
+sequence: {assigned at activation: 001, 002, etc}
 parent_ticket: {null or TICKET-session-id-###}
 title: {Brief description of work}
 cycle_type: {development|documentation|architecture|product|design}
