@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-enforce-subagent-delegation
+ticket_id: TICKET-enforce-subagent-delegation-001
 session_id: enforce-subagent-delegation
-sequence: {assigned at activation}
+sequence: 001
 parent_ticket: null
 title: Hook to enforce subagent delegation for code edits
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-08 16:19
 created: 2024-12-08 09:45
 worktree_path: null
 ---
