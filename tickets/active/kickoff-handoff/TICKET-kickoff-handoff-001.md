@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: TICKET-kickoff-cmd-001
 title: Make /kickoff handoff-aware for seamless session continuity
 cycle_type: development
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-07 23:30
 created: 2025-12-08 01:28
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/kickoff-handoff
 ---
 
 # Requirements
@@ -94,3 +94,7 @@ Making them speak to each other enables true session continuity:
 ## [2025-12-08 01:28] - Ticket Created
 - Enhancement to existing /kickoff command
 - Parent: TICKET-kickoff-cmd-001
+
+## [2025-12-07 23:30] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/kickoff-handoff
+- Branch: ticket/kickoff-handoff
