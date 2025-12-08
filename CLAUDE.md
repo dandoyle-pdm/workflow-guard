@@ -16,7 +16,12 @@ You are working in the **Workflow Guard** plugin - a Claude Code plugin that pro
 │   ├── hooks.json                # Hook configuration
 │   ├── block-main-commits.sh     # Prevents commits to protected branches
 │   ├── enforce-pr-workflow.sh    # Blocks direct merges to protected branches
-│   └── enforce-ticket-completion.sh  # Verifies ticket completion before PR
+│   ├── enforce-ticket-completion.sh  # Verifies ticket completion before PR
+│   ├── block-mcp-git-commits.sh  # Blocks MCP git on protected branches
+│   ├── confirm-code-edits.sh     # Requires confirmation for code edits
+│   ├── block-unreviewed-edits.sh # Requires quality agent for edits
+│   ├── validate-ticket-naming.sh # Enforces ticket naming conventions
+│   └── diagnostic-logger.sh      # Debug logging utility
 ├── commands/
 │   ├── handoff.md                # Auto-detect session type
 │   ├── handoff-debug.md          # Debugging session handoffs
@@ -48,6 +53,10 @@ All handoff commands auto-generate structured prompts with system state, tool us
 | `block-main-commits` | `git commit` on protected branches | Prevents accidental commits to main/master/production |
 | `enforce-pr-workflow` | `git merge feature → protected` | Routes feature integration through PR workflow |
 | `enforce-ticket-completion` | `gh pr create` without completed ticket | Ensures ticket in completed/ before PR |
+| `block-mcp-git-commits` | MCP git tools on protected branches | Prevents circumvention via MCP git commands |
+| `confirm-code-edits` | Edit/Write on code files | Requires confirmation before code modifications |
+| `block-unreviewed-edits` | Edit/Write/NotebookEdit without quality agent | Enforces quality cycle for file modifications |
+| `validate-ticket-naming` | Write to tickets/ with invalid naming | Enforces TICKET-{session-id}-{seq}.md pattern |
 
 **Protected Branches:** main, master, production (configurable via `CLAUDE_PROTECTED_BRANCHES` env var)
 

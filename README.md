@@ -47,7 +47,7 @@ Each handoff command automatically:
 
 ### Hooks
 
-Four PreToolUse hooks enforce workflow discipline and quality cycles:
+Seven PreToolUse hooks enforce workflow discipline and quality cycles:
 
 #### block-main-commits
 
@@ -92,6 +92,48 @@ Ensures ticket is in `tickets/completed/` before PR creation.
 - Blocks if ticket is still in `tickets/active/`
 - Allows non-ticket work to proceed (no ticket found = warning only)
 
+#### block-mcp-git-commits
+
+Blocks MCP git tools (`mcp__git__git_commit`, `mcp__git__git_add`) on protected branches.
+
+**Behavior:**
+- Detects MCP git commit/add operations
+- Checks current branch against protected list
+- Blocks with error message on protected branches
+- Complements `block-main-commits` for comprehensive git protection
+- MCP tools bypass the Bash tool, requiring dedicated hook matcher
+
+**Why this hook exists:**
+
+MCP git tools provide direct git operations that bypass the standard Bash tool entirely. Without this hook, branch protection could be circumvented by using MCP tools instead of Bash git commands.
+
+#### confirm-code-edits
+
+Requires user confirmation before modifying code files via Edit or Write tools.
+
+**Behavior:**
+- Detects Edit and Write operations on code files
+- Prompts for confirmation before proceeding with edits
+- Allows workflow metadata files without confirmation (tickets, handoffs)
+- Allows test files without confirmation
+- Provides audit trail of confirmed edits
+- Configurable code file extensions via `CODE_FILE_EXTENSIONS` env var
+
+**Default code extensions:**
+`go`, `py`, `sh`, `js`, `ts`, `tsx`, `jsx`
+
+**Exception files (always allowed):**
+- Ticket files: Any file in `tickets/` directory
+- Test files: Files matching patterns like `_test.go`, `*.test.js`, `*.spec.ts`
+
+**Environment variables:**
+- `CODE_FILE_EXTENSIONS` - Comma-separated list of extensions to protect (default: `go,py,sh,js,ts,tsx,jsx`)
+- `SKIP_EDIT_CONFIRMATION` - Set to `true` to bypass confirmation (use with caution)
+
+**Use case:**
+
+Prevents unintended code modifications during investigation or read-only workflows. When Claude is exploring code to answer questions, this hook prevents accidental edits unless explicitly requested by the user.
+
 #### block-unreviewed-edits
 
 Enforces quality agent context for file modifications (Edit, Write, NotebookEdit).
@@ -109,6 +151,42 @@ Enforces quality agent context for file modifications (Edit, Write, NotebookEdit
 
 **Quality agent detection:**
 The hook reads the transcript JSONL file to detect if a quality agent from qc-router is active. When you dispatch a quality agent via the Task tool, the agent's identity marker appears in the transcript, allowing the hook to verify proper quality cycle context.
+
+#### validate-ticket-naming
+
+Enforces ticket naming conventions for files in the `tickets/` directory.
+
+**Behavior:**
+- Validates filename pattern: `TICKET-{session-id}-{sequence}.md`
+- Validates directory uses session-id (not full ticket name)
+- Exception: `tickets/queue/` only validates filename (no directory check)
+- Blocks invalid names with detailed guidance
+- Ensures consistency for automation workflows
+
+**Naming Rules:**
+- **session-id**: lowercase letters, numbers, hyphens (e.g., `quality-gate`, `activate-fix`)
+- **sequence**: exactly 3 digits (e.g., `001`, `002`)
+
+**Valid Examples:**
+```
+tickets/queue/TICKET-quality-gate-001.md           ✓
+tickets/active/quality-gate/TICKET-quality-gate-001.md  ✓
+tickets/completed/activate-fix/TICKET-activate-fix-001.md  ✓
+```
+
+**Invalid Examples:**
+```
+TICKET-Quality-Gate-001.md        ✗ (uppercase not allowed)
+TICKET-quality_gate-001.md        ✗ (underscores not allowed)
+tickets/active/TICKET-quality-gate-001/TICKET-quality-gate-001.md  ✗ (directory should be session-id)
+```
+
+**Why this matters:**
+
+- Consistent naming enables automation (`activate-ticket.sh`, `complete-ticket.sh`)
+- Session-id based directories allow multiple sequential tickets (001, 002, etc.)
+- Lowercase-with-hyphens prevents case-sensitivity issues across platforms
+- Automated workflows rely on these patterns to function correctly
 
 ## Configuration
 
@@ -143,6 +221,20 @@ Default quality agents (12 total across 4 quality cycles):
 Override with environment variable (comma-separated):
 ```bash
 export CLAUDE_QUALITY_AGENTS="code-developer,code-reviewer,code-tester,custom-agent"
+```
+
+### Code Edit Confirmation
+
+The `confirm-code-edits` hook protects code files from unintended modifications.
+
+**Configurable file extensions:**
+```bash
+export CODE_FILE_EXTENSIONS="go,py,sh,js,ts,tsx,jsx"  # default
+```
+
+**Bypass confirmation (use with caution):**
+```bash
+export SKIP_EDIT_CONFIRMATION=true
 ```
 
 ### Debug Logging
@@ -259,7 +351,11 @@ workflow-guard                        qc-router
 ├── hooks/                            ├── agents/
 │   ├── block-main-commits.sh         │   ├── plugin-engineer/AGENT.md
 │   ├── enforce-pr-workflow.sh        │   ├── plugin-reviewer/AGENT.md
-│   └── block-unreviewed-edits.sh     │   └── plugin-tester/AGENT.md
+│   ├── enforce-ticket-completion.sh  │   └── plugin-tester/AGENT.md
+│   ├── block-mcp-git-commits.sh      │
+│   ├── confirm-code-edits.sh         │
+│   ├── validate-ticket-naming.sh     │
+│   └── block-unreviewed-edits.sh     │
 │       │                             │
 │       │ reads transcript            │
 │       │ detects agent identity      │
@@ -320,6 +416,31 @@ Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this
           "type": "command",
           "command": "hooks/enforce-pr-workflow.sh",
           "timeout": 10
+        },
+        {
+          "type": "command",
+          "command": "hooks/enforce-ticket-completion.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "mcp__git__git_commit|mcp__git__git_add",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-mcp-git-commits.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/confirm-code-edits.sh",
+          "timeout": 10
         }
       ]
     },
@@ -330,6 +451,16 @@ Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this
           "type": "command",
           "command": "hooks/block-unreviewed-edits.sh",
           "timeout": 5
+        }
+      ]
+    },
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/validate-ticket-naming.sh",
+          "timeout": 10
         }
       ]
     }
@@ -436,6 +567,44 @@ The `block-main-commits.sh` hook has a surgical exception for ticket lifecycle f
 | `tickets/active/{branch}/` | Tickets being actively worked |
 | `tickets/completed/{branch}/` | Tickets ready for PR |
 | `tickets/archive/` | Obsolete/superseded tickets |
+
+### Session-ID vs Ticket-ID Naming
+
+The plugin distinguishes between **ticket-id** (full identifier) and **session-id** (extracted middle portion):
+
+**ticket-id**: Full identifier like `TICKET-quality-gate-001`
+**session-id**: Extracted middle portion like `quality-gate`
+
+This distinction is important for automation:
+
+| Resource | Uses | Example |
+|----------|------|---------|
+| Ticket filename | ticket-id | `TICKET-quality-gate-001.md` |
+| Git branch | session-id | `ticket/quality-gate` |
+| Worktree directory | session-id | `~/.novacloud/worktrees/workflow-guard/quality-gate` |
+| Active/completed directories | session-id | `tickets/active/quality-gate/` |
+
+**Why session-id for branches/worktrees?**
+
+- Allows multiple sequential tickets to share the same branch (001, 002, 003)
+- Shorter, cleaner branch names
+- Consistent worktree location for a session regardless of ticket sequence
+
+**Example workflow:**
+
+```bash
+# First ticket in session
+tickets/queue/TICKET-quality-gate-001.md
+  → tickets/active/quality-gate/TICKET-quality-gate-001.md
+  → branch: ticket/quality-gate
+  → worktree: ~/.novacloud/worktrees/workflow-guard/quality-gate
+
+# Follow-up ticket in same session
+tickets/queue/TICKET-quality-gate-002.md
+  → tickets/active/quality-gate/TICKET-quality-gate-002.md
+  → branch: ticket/quality-gate (same!)
+  → worktree: ~/.novacloud/worktrees/workflow-guard/quality-gate (same!)
+```
 
 ## Workflow Overview
 
