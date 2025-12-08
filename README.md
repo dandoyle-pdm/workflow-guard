@@ -223,6 +223,20 @@ Override with environment variable (comma-separated):
 export CLAUDE_QUALITY_AGENTS="code-developer,code-reviewer,code-tester,custom-agent"
 ```
 
+### Code Edit Confirmation
+
+The `confirm-code-edits` hook protects code files from unintended modifications.
+
+**Configurable file extensions:**
+```bash
+export CODE_FILE_EXTENSIONS="go,py,sh,js,ts,tsx,jsx"  # default
+```
+
+**Bypass confirmation (use with caution):**
+```bash
+export SKIP_EDIT_CONFIRMATION=true
+```
+
 ### Debug Logging
 
 All hooks log to `~/.claude/logs/hooks-debug.log` for troubleshooting:
