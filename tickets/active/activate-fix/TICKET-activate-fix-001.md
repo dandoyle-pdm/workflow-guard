@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix activate-ticket.sh to use session-id for branch/worktree naming
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 11:50
 created: 2025-12-07 11:45
@@ -91,16 +91,51 @@ Completed tickets already use correct pattern:
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+### Part 1: activate-ticket.sh Session-ID Extraction
+- Modified `main()` function to extract session-id from ticket metadata
+- Primary method: Read `session_id:` field from ticket YAML frontmatter
+- Fallback method: Parse from filename using pattern `TICKET-{session-id}-{sequence}`
+- Branch name now uses: `ticket/{session-id}` instead of `ticket/{full-ticket-id}`
+- Worktree directory now uses: `{project}/{session-id}` instead of `{project}/{full-ticket-id}`
+- Active directory now uses: `tickets/active/{session-id}/` instead of `tickets/active/{full-ticket-id}/`
+- Added logging for session_id to help with debugging
+
+### Part 2: validate-ticket-naming.sh Hook
+- Created PreToolUse hook that triggers on Write tool for files in `tickets/` directory
+- Validates filename pattern: `^TICKET-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}\.md$`
+- Enforces lowercase-with-hyphens for session-id (no uppercase, no underscores)
+- Enforces exactly 3-digit sequence number
+- Validates directory naming matches session-id extracted from filename
+- Blocks invalid names with comprehensive error messages showing examples
+- Security hardened following patterns from existing hooks
+- Registered in hooks/hooks.json with Write tool matcher
+
+### Part 3: complete-ticket.sh Worktree Detection Fix
+- Changed `is_worktree()` from using `--git-common-dir` to `--git-dir`
+- `--git-common-dir` returns the parent .git directory, not the worktree .git
+- `--git-dir` correctly identifies worktree-specific git directory
+- Fix prevents false negatives when running script from worktree
 
 ## Questions/Concerns
-[To be filled by plugin-engineer]
+
+None. All three parts implemented as specified.
 
 ## Changes Made
-- File changes:
-- Commits:
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+### File Changes
+- `scripts/activate-ticket.sh` - Added session-id extraction logic
+- `scripts/complete-ticket.sh` - Fixed is_worktree() detection
+- `hooks/validate-ticket-naming.sh` - New validation hook (261 lines)
+- `hooks/hooks.json` - Registered new hook
+
+### Commits
+- 9620a90: fix: extract session-id from ticket for branch/worktree naming
+- 3496fb2: feat: add validate-ticket-naming.sh PreToolUse hook
+- a8fa0a6: feat: register validate-ticket-naming hook in hooks.json
+- 80a89a4: fix: correct is_worktree() detection in complete-ticket.sh
+
+**Status Update**: 2025-12-07 12:15 - Changed status to `critic_review`
 
 # Critic Section
 
