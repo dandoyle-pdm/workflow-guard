@@ -59,15 +59,22 @@ validate_directory() {
     local file_path="$1"
     local filename="$2"
 
-    # Extract session-id from filename
-    local session_id
-    session_id=$(extract_session_id "$filename")
-
     # Check if path contains tickets/ directory
     if [[ ! "$file_path" =~ tickets/ ]]; then
         # Not a ticket path, skip validation
         return 0
     fi
+
+    # Exception: tickets/queue/ doesn't follow session-id directory pattern
+    # Queue files are created BEFORE activation, so they can't have session-id directories yet
+    if [[ "$file_path" =~ tickets/queue/ ]]; then
+        debug_log "Queue directory exception - skipping directory structure validation"
+        return 0
+    fi
+
+    # Extract session-id from filename
+    local session_id
+    session_id=$(extract_session_id "$filename")
 
     # Extract the immediate parent directory
     local parent_dir
@@ -76,6 +83,7 @@ validate_directory() {
     dir_name=$(basename "$parent_dir")
 
     # Directory name should match session-id
+    # Only enforced for tickets/active/ and tickets/completed/
     if [[ "$dir_name" != "$session_id" ]]; then
         debug_log "ERROR: Directory name '$dir_name' does not match session-id '$session_id'"
         return 1
@@ -131,12 +139,15 @@ EOFMSG
 ERROR: Directory name does not match session-id
 
 The ticket file must be placed in a directory matching its session-id.
+This validation applies to tickets/active/ and tickets/completed/ only.
+(tickets/queue/ is exempt - files are placed there before activation)
 
 For filename: ${filename}
 Expected directory: tickets/*/${session_id}/
 Found directory: $(dirname "$file_path")
 
 Examples of CORRECT paths:
+  ✓ tickets/queue/TICKET-quality-gate-001.md           (queue is flat, no subdirs)
   ✓ tickets/active/quality-gate/TICKET-quality-gate-001.md
   ✓ tickets/active/quality-gate/TICKET-quality-gate-002.md
   ✓ tickets/completed/activate-fix/TICKET-activate-fix-001.md
