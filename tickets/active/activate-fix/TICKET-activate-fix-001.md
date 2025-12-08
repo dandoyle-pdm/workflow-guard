@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix activate-ticket.sh to use session-id for branch/worktree naming
 cycle_type: development
-status: expediter_review
+status: approved
 claimed_by: ddoyle
 claimed_at: 2025-12-07 11:50
 created: 2025-12-07 11:45
@@ -311,7 +311,31 @@ This is production-ready code that meets all security, quality, and functional r
 
 ## Validation Results
 
-### Test 1: validate-ticket-naming.sh Hook Tests
+### Final Validation (2025-12-07 19:00) - Post Rework
+
+**Test 1a: Valid ticket name in queue - EXPECTED PASS**
+- Input: `tickets/queue/TICKET-my-feature-001.md`
+- Result: **PASS** (allowed through after queue directory exception fix)
+- Exit Code: 0
+
+**Test 1b: Invalid uppercase letters in queue - EXPECTED BLOCK**
+- Input: `tickets/queue/TICKET-MY-FEATURE-001.md`
+- Result: **PASS** (correctly blocked with filename validation error)
+- Exit Code: Non-zero (blocked)
+
+**Test 1c: Valid session-id directory in active - EXPECTED PASS**
+- Input: `tickets/active/my-feature/TICKET-my-feature-001.md`
+- Result: **PASS** (allowed through)
+- Exit Code: 0
+
+**Test 1d: Invalid directory (full ticket name) in active - EXPECTED BLOCK**
+- Input: `tickets/active/TICKET-my-feature-001/TICKET-my-feature-001.md`
+- Result: **PASS** (correctly blocked with directory validation error)
+- Exit Code: Non-zero (blocked)
+
+### Initial Validation (2025-12-07 18:30) - Pre Rework
+
+**Test 1: validate-ticket-naming.sh Hook Tests**
 
 **Test 1a: Valid ticket name in queue - EXPECTED PASS**
 - Input: `tickets/queue/TICKET-my-feature-001.md`
@@ -382,6 +406,29 @@ This is production-ready code that meets all security, quality, and functional r
 
 ## Summary
 
+### Final Summary (2025-12-07 19:00) - Post Rework
+
+**Pass Rate: 4/4 tests (100%)**
+
+All validation tests pass after queue directory exception fix:
+1. Queue directory files with valid filenames: **PASS** (allowed)
+2. Queue directory files with invalid filenames: **PASS** (blocked)
+3. Active directory with session-id structure: **PASS** (allowed)
+4. Active directory with full ticket-id structure: **PASS** (blocked)
+
+The hook now correctly:
+- Validates filename patterns for all ticket files
+- Skips directory structure validation for queue/ (files created before activation)
+- Enforces directory structure validation for active/ and completed/
+- Provides clear error messages distinguishing queue from active/completed
+
+All three parts of the ticket are complete and tested:
+1. activate-ticket.sh uses session-id for branch/worktree naming
+2. validate-ticket-naming.sh enforces naming conventions with queue exception
+3. complete-ticket.sh correctly detects worktree context
+
+### Initial Summary (2025-12-07 18:30) - Pre Rework
+
 **Pass Rate: 11/12 tests (91.7%)**
 
 **Critical Finding:**
@@ -396,23 +443,21 @@ This is production-ready code that meets all security, quality, and functional r
 3. Queue directory should only validate filename pattern, not directory structure
 
 ## Quality Gate Decision
-**CREATE_REWORK_TICKET**
+**APPROVE**
 
-## Next Steps
+## Rationale
 
-Create TICKET-activate-fix-002 to fix the queue directory validation issue:
+The queue directory exception has been successfully implemented and all tests now pass:
 
-**What needs fixing:**
-- Modify `validate-ticket-naming.sh` line 58-85 to skip directory validation for `tickets/queue/` paths
-- Only enforce directory naming for `tickets/active/` and `tickets/completed/`
-- Add test case to verify queue/ files are allowed
+1. **Queue Exception Correctness**: Lines 68-73 in validate-ticket-naming.sh properly skip directory validation for queue/ paths while maintaining filename validation
+2. **Security Maintained**: No bypass vulnerabilities introduced, exception is narrowly scoped
+3. **Logic Flow Verified**: Queue, active, and completed paths all follow correct validation paths
+4. **Error Messages Updated**: Clear guidance distinguishes queue behavior from active/completed
+5. **All Tests Passing**: 100% pass rate on validation suite
 
-**Why this matters:**
-- Without this fix, the hook blocks normal ticket creation workflow
-- Users create tickets in queue/ before activation - they can't follow session-id directory pattern yet
-- This is a blocker for using the plugin in normal workflows
+The implementation is production-ready and meets all requirements.
 
-**Status Update**: 2025-12-07 18:30 - Changed status to `expediter_review`, decision is CREATE_REWORK_TICKET
+**Status Update**: 2025-12-07 19:00 - Final validation complete, changed status to `approved`
 
 # Changelog
 
