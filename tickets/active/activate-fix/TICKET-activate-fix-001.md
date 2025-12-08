@@ -268,19 +268,109 @@ This is production-ready code that meets all security, quality, and functional r
 # Expediter Section
 
 ## Validation Results
-- Script syntax valid: [PASS/FAIL]
-- Branch naming correct: [PASS/FAIL]
-- Worktree naming correct: [PASS/FAIL]
-- Directory naming correct: [PASS/FAIL]
-- Existing tickets unaffected: [PASS/FAIL]
+
+### Test 1: validate-ticket-naming.sh Hook Tests
+
+**Test 1a: Valid ticket name in queue - EXPECTED PASS**
+- Input: `tickets/queue/TICKET-my-feature-001.md`
+- Result: **FAIL** (blocked with directory validation error)
+- Issue: Hook validates directory structure for queue/ files, but queue doesn't follow session-id pattern
+
+**Test 1b: Invalid uppercase letters - EXPECTED BLOCK**
+- Input: `tickets/queue/TICKET-MY-FEATURE-001.md`
+- Result: **PASS** (correctly blocked with filename validation error)
+
+**Test 1c: Invalid sequence position - EXPECTED BLOCK**
+- Input: `tickets/queue/TICKET-001-my-feature.md`
+- Result: **PASS** (correctly blocked with filename validation error)
+
+**Test 1d: Invalid underscore in name - EXPECTED BLOCK**
+- Input: `tickets/queue/TICKET-my_feature-001.md`
+- Result: **PASS** (correctly blocked with filename validation error)
+
+**Test 1e: Invalid directory (full ticket name) - EXPECTED BLOCK**
+- Input: `tickets/active/TICKET-my-feature-001/TICKET-my-feature-001.md`
+- Result: **PASS** (correctly blocked with directory validation error)
+
+**Test 1f: Valid session-id directory - EXPECTED PASS**
+- Input: `tickets/active/my-feature/TICKET-my-feature-001.md`
+- Result: **PASS** (allowed through)
+
+**Test 1g: Non-ticket path - EXPECTED PASS**
+- Input: `/path/to/some/file.go`
+- Result: **PASS** (allowed through)
+
+**Test 1h: TEMPLATE.md exception - EXPECTED PASS**
+- Input: `tickets/TEMPLATE.md`
+- Result: **PASS** (allowed through)
+
+### Test 2: complete-ticket.sh Worktree Detection
+
+**Test 2a: Verify is_worktree() function**
+- Command: `git rev-parse --git-dir`
+- Result: `/home/ddoyle/.claude/plugins/workflow-guard/.git/worktrees/activate-fix`
+- Assessment: **PASS** - Correctly detects worktree context (contains `.git/worktrees/`)
+- Fix verification: Changed from `--git-common-dir` to `--git-dir` is correct
+
+### Test 3: activate-ticket.sh Session-ID Logic (Code Review)
+
+**Test 3a: Session-id extraction from metadata**
+- Line 225: `grep "^session_id:" "$ticket_path" | head -1 | cut -d: -f2 | tr -d ' \t\n\r'`
+- Assessment: **PASS** - Correctly extracts from YAML frontmatter
+- Sanitization: **PASS** - Removes whitespace properly
+
+**Test 3b: Session-id extraction fallback from filename**
+- Lines 228, 232: `sed 's/^TICKET-//;s/-[0-9]\{3\}$//'`
+- Pattern: Removes `TICKET-` prefix and `-NNN.md` suffix
+- Example: `TICKET-activate-fix-001` → `activate-fix`
+- Assessment: **PASS** - Correctly extracts session-id
+
+**Test 3c: Branch naming**
+- Line 235: `local branch_name="ticket/${session_id}"`
+- Assessment: **PASS** - Uses session-id not full ticket name
+
+**Test 3d: Worktree directory**
+- Line 236: `local branch_dir="${session_id}"`
+- Used in phase2_activate for worktree path construction
+- Assessment: **PASS** - Uses session-id not full ticket name
+
+**Test 3e: Active directory naming**
+- Verified in phase1_claim and phase2_activate usage
+- Assessment: **PASS** - Uses session-id for directory structure
+
+## Summary
+
+**Pass Rate: 11/12 tests (91.7%)**
+
+**Critical Finding:**
+- The `validate-ticket-naming.sh` hook has overly strict directory validation
+- It blocks files in `tickets/queue/` because queue doesn't follow session-id directory pattern
+- Queue is a special case - tickets are created there BEFORE activation, so they can't have session-id directories yet
+- **Impact**: The hook will block ticket creation in queue/ directory, breaking the normal workflow
+
+**Recommendations:**
+1. **CRITICAL**: Add exception for `tickets/queue/` directory in validate-ticket-naming.sh
+2. Hook should only validate directory structure for `tickets/active/` and `tickets/completed/`
+3. Queue directory should only validate filename pattern, not directory structure
 
 ## Quality Gate Decision
-[APPROVE | CREATE_REWORK_TICKET | ESCALATE]
+**CREATE_REWORK_TICKET**
 
 ## Next Steps
-[If approved: integration steps | If rework: what needs fixing | If escalate: why]
 
-**Status Update**: [Date/time] - Changed status to `approved` or created `TICKET-{session-id}-{next-seq}`
+Create TICKET-activate-fix-002 to fix the queue directory validation issue:
+
+**What needs fixing:**
+- Modify `validate-ticket-naming.sh` line 58-85 to skip directory validation for `tickets/queue/` paths
+- Only enforce directory naming for `tickets/active/` and `tickets/completed/`
+- Add test case to verify queue/ files are allowed
+
+**Why this matters:**
+- Without this fix, the hook blocks normal ticket creation workflow
+- Users create tickets in queue/ before activation - they can't follow session-id directory pattern yet
+- This is a blocker for using the plugin in normal workflows
+
+**Status Update**: 2025-12-07 18:30 - Changed status to `expediter_review`, decision is CREATE_REWORK_TICKET
 
 # Changelog
 
