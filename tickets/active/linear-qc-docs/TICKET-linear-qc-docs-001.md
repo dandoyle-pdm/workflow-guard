@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Document LINEAR quality cycle rule - no loops, rework creates -002
 cycle_type: documentation
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-07 23:58
 created: 2025-12-08 01:45
@@ -65,7 +65,38 @@ TICKET-xxx-002:
 # Creator Section
 
 ## Implementation Notes
-[To be filled by tech-writer]
+
+### What Was Documented
+
+Added "Linear Quality Cycle" section to README.md (lines 398-481) covering:
+
+1. **The Rule** - ONE PASS per ticket, NO LOOPS
+2. **Role Boundaries** - Critics audit only, expediter creates rework tickets
+3. **Sequence Numbers** - Track rework iterations (-001, -002, -003)
+4. **Why This Matters** - Role separation, audit trail, loop prevention
+5. **Correct vs Incorrect Flow** - Examples showing proper linear flow vs violations
+
+### Structure and Placement
+
+Positioned after "Integration with qc-router" and before "Declarative Hook Configuration" for logical flow:
+- qc-router integration explains the agent system
+- Linear Quality Cycle explains how agents coordinate
+- Hook configuration explains technical enforcement
+
+### Documentation Style
+
+- Clear visual diagrams using code blocks
+- Concrete examples (TICKET-kickoff-001 process violation)
+- Explicit "DO NOT DO THIS" warnings
+- Bulleted explanations of why violations are wrong
+- Under 100 lines as specified (83 lines total)
+
+### Key Messages Emphasized
+
+1. Critics NEVER call creators directly
+2. Expediter (not main thread) creates rework tickets
+3. Each ticket = ONE PASS through chain
+4. Sequence numbers provide audit trail
 
 # Critic Section
 [To be filled by tech-editor]

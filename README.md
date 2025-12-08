@@ -395,6 +395,90 @@ This ensures all code changes go through the quality cycle: Creator → Critic �
 4. If quality agent detected (any of 12 recognized agents), ALLOW
 5. Otherwise, BLOCK with guidance on using qc-router
 
+## Linear Quality Cycle
+
+Quality cycles must follow a LINEAR flow with NO LOOPS. Each ticket makes ONE PASS through the chain: Creator → Critic(s) → Expediter. If rework is needed, the expediter creates a NEW ticket with an incremented sequence number.
+
+### The Rule
+
+**ONE PASS per ticket through the chain. NO LOOPS.**
+
+```
+TICKET-xxx-001: Creator → Critic(s) → Expediter
+                                         ↓
+                              If rework needed:
+                              Expediter creates TICKET-xxx-002
+                                         ↓
+TICKET-xxx-002: Creator → Critic(s) → Expediter (fresh cycle)
+```
+
+### Role Boundaries
+
+**Critics (any number) NEVER call Creators:**
+- Critics audit and document issues
+- Critics decide APPROVED or NEEDS_CHANGES
+- Critics do NOT coordinate rework
+- Critics do NOT re-invoke creators within the same ticket
+
+**Expediter creates rework tickets:**
+- Reviews critic findings
+- If issues valid: CREATE_REWORK_TICKET (new -002)
+- The -002 ticket goes through its own full cycle
+- Never re-invokes creator in the same ticket
+
+### Sequence Numbers Track Rework
+
+- `-001`: First attempt
+- `-002`: First rework (based on -001 findings)
+- `-003`: Second rework (based on -002 findings)
+- Clear audit trail of iterations
+
+### Why This Matters
+
+1. **Role separation**: Critics audit, expediter coordinates
+2. **Clear audit trail**: Each ticket = one pass through chain
+3. **Prevents infinite loops**: Clear termination conditions
+4. **Sequence numbers show history**: Easy to track rework cycles
+
+### Correct vs Incorrect Flow
+
+**Correct (Linear):**
+```
+TICKET-kickoff-001:
+  1. tech-writer produces docs
+  2. tech-editor audits → NEEDS_CHANGES (documents issues)
+  3. tech-publisher reviews findings → CREATE_REWORK_TICKET
+  4. Creates TICKET-kickoff-002 with issues from -001
+
+TICKET-kickoff-002:
+  1. tech-writer fixes issues from -001
+  2. tech-editor re-audits
+  3. tech-publisher approves → APPROVED
+```
+
+**Incorrect (Loop - DO NOT DO THIS):**
+```
+TICKET-kickoff-001:
+  1. tech-writer produces docs
+  2. tech-editor audits → NEEDS_CHANGES
+  3. Main thread re-invokes tech-writer to fix ❌ WRONG
+  4. tech-editor re-audits in same ticket ❌ LOOP
+```
+
+**Why the incorrect flow is wrong:**
+- Violates one-pass rule
+- Creates audit trail confusion (same ticket, multiple attempts)
+- Breaks role separation (main thread acting as expediter)
+- Loses sequence number tracking (no -002 created)
+
+### Implementation Notes
+
+This rule is enforced through:
+- Quality cycle recipes in qc-router
+- Documentation in CLAUDE.md
+- Ticket naming conventions (sequence numbers)
+- Clear role definitions in AGENT.md files
+
 ## Declarative Hook Configuration
 
 Hooks are configured declaratively in `hooks/hooks.json`. Claude Code loads this configuration at session start.
