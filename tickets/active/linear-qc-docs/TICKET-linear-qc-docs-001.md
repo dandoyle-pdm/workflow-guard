@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Document LINEAR quality cycle rule - no loops, rework creates -002
 cycle_type: documentation
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-07 23:58
 created: 2025-12-08 01:45
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/linear-qc-docs
 ---
 
 # Requirements
@@ -78,3 +78,7 @@ TICKET-xxx-002:
 ## [2025-12-08 01:45] - Ticket Created
 - Root cause: TICKET-kickoff-handoff-001 process violation
 - Goal: Prevent future violations through clear documentation
+
+## [2025-12-07 23:58] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/linear-qc-docs
+- Branch: ticket/linear-qc-docs
