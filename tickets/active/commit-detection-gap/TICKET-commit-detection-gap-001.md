@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-commit-detection-gap
+ticket_id: TICKET-commit-detection-gap-001
 session_id: commit-detection-gap
-sequence: {assigned at activation: 001, 002, etc}
+sequence: 001
 parent_ticket: null
 title: Add protected branch commit detection and observer logging
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-08 21:33
 created: 2025-12-08 23:32
 worktree_path: null
 ---
