@@ -249,6 +249,33 @@ main() {
         # Log for audit
         debug_log "AUDIT: Blocked git commit on protected branch - branch=${current_branch}, command=${command:0:100}"
 
+        # Log violation for QC Observer (fail-safe - errors won't break blocking)
+        # Use jq for safe JSON construction to prevent injection attacks
+        local violation_json
+        violation_json=$(jq -n \
+            --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
+            --arg tool "Bash" \
+            --arg cmd "${command:0:200}" \
+            --arg branch "${current_branch}" \
+            '{
+                "type": "workflow-guard",
+                "timestamp": $ts,
+                "observation_type": "blocking",
+                "cycle": "inferred",
+                "session_id": "",
+                "agent": null,
+                "tool": $tool,
+                "tool_input": {"command": $cmd},
+                "violation": "protected_branch_commit",
+                "severity": "CRITICAL",
+                "blocking": true,
+                "context": {"branch": $branch, "protected_branches": "main,master,production"}
+            }' 2>/dev/null || true)
+
+        if [[ -n "${violation_json}" ]]; then
+            printf '%s' "${violation_json}" | "${SCRIPT_DIR}/observe-violation.sh" 2>/dev/null || true
+        fi
+
         # Exit code 2 blocks the tool execution
         exit 2
     fi
