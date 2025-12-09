@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
-# block-main-commits.sh - PreToolUse hook to block git commit on protected branches
+# detect-protected-commits.sh - PostToolUse hook to detect commits on protected branches
 #
-# This hook intercepts `git commit` commands and blocks them when the current
-# branch is a protected branch (main, master, production). This ensures all
-# changes go through the worktree + PR workflow.
+# This hook runs AFTER git commit commands complete (PostToolUse hook) and detects
+# when commits land on protected branches. This provides comprehensive detection
+# for scenarios where PreToolUse hooks are bypassed due to allowlisted commands.
 #
-# Security hardened following patterns from enforce-pr-workflow.sh:
+# WHY THIS EXISTS:
+# The `git commit` command is in Claude Code's allowlist, meaning PreToolUse hooks
+# never evaluate it. This creates a detection gap. PostToolUse hooks DO fire for
+# allowlisted commands (after execution), so this hook provides after-the-fact
+# detection and violation logging.
+#
+# IMPORTANT: This is detection-only, not blocking. The commit has already happened
+# when this hook runs. We log violations for audit/alerting purposes.
+#
+# Security hardened following patterns from block-main-commits.sh:
 # - Command injection prevention via printf instead of echo
 # - Proper jq error handling
 # - Input validation
@@ -18,7 +27,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly CLAUDE_HOME="${HOME}/.claude"
 readonly DEBUG_LOG="${CLAUDE_HOME}/logs/hooks-debug.log"
 
-# Color codes for error messages
+# Color codes for warning messages
 readonly RED='\033[0;31m'
 readonly YELLOW='\033[1;33m'
 readonly GREEN='\033[0;32m'
@@ -33,40 +42,7 @@ mkdir -p "$(dirname "${DEBUG_LOG}")" 2>/dev/null || true
 
 # Debug logging function
 debug_log() {
-    printf '[%s] [block-main-commits] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "${DEBUG_LOG}" 2>/dev/null || true
-}
-
-# Check if staged changes are ticket lifecycle only
-# Returns 0 if ONLY ticket files modified, 1 otherwise
-is_ticket_lifecycle_only() {
-    local staged_files
-    staged_files=$(git diff --cached --name-only 2>/dev/null)
-
-    # If no staged files, not a ticket lifecycle commit
-    [[ -z "$staged_files" ]] && return 1
-
-    while IFS= read -r file; do
-        [[ -z "$file" ]] && continue
-
-        # Must be in ticket workflow directories
-        if [[ ! "$file" =~ ^tickets/(queue|active|completed|archive)/ ]]; then
-            debug_log "Non-ticket directory: $file"
-            return 1
-        fi
-
-        # Extract filename from path
-        local filename
-        filename=$(basename "$file")
-
-        # Must be a ticket or handoff markdown file
-        if [[ ! "$filename" =~ ^(TICKET|HANDOFF)-[a-zA-Z0-9-]+\.md$ ]]; then
-            debug_log "Invalid ticket filename: $filename (must be TICKET-*.md or HANDOFF-*.md)"
-            return 1
-        fi
-    done <<< "$staged_files"
-
-    debug_log "Ticket lifecycle commit validated (all files are valid ticket files)"
-    return 0
+    printf '[%s] [detect-protected-commits] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "${DEBUG_LOG}" 2>/dev/null || true
 }
 
 # Check if a branch name is protected
@@ -123,51 +99,70 @@ is_git_commit_command() {
     return 1
 }
 
-# Generate helpful routing message
-generate_error_message() {
+# Generate warning message (shown to user)
+generate_warning_message() {
     local current_branch="$1"
     local command="$2"
+    local commit_sha="$3"
 
     cat <<EOFMSG
 
 ================================================================================
-  DIRECT COMMIT BLOCKED - Worktree Workflow Required
+  WARNING: Protected Branch Commit Detected
 ================================================================================
 
-You are on branch '${current_branch}' (a protected branch) and attempted to
-run: ${command:0:80}
+A commit was made to protected branch '${current_branch}':
+  Command: ${command:0:80}
+  Commit:  ${commit_sha}
 
-Direct commits to protected branches are not allowed.
+This commit has been logged for audit purposes.
 
---------------------------------------------------------------------------------
-  CORRECT WORKFLOW
---------------------------------------------------------------------------------
+Protected branches should use worktree + PR workflow for changes.
 
-1. Create a worktree for your work:
-   git worktree add \$WORKTREE_BASE/<project>/<branch-name> -b <branch-name>
+Next steps:
+  1. If this was intentional (e.g., ticket lifecycle), no action needed
+  2. If unintentional, consider reverting: git reset --soft HEAD~1
+  3. Follow worktree workflow for future changes
 
-2. Navigate to the worktree and make your changes:
-   cd \$WORKTREE_BASE/<project>/<branch-name>
-   # ... make changes, commit freely ...
-
-3. Push and create a Pull Request:
-   git push -u origin <branch-name>
-   gh pr create --base ${current_branch}
-
-Alternatively, use the activate-ticket.sh script:
-   scripts/activate-ticket.sh tickets/queue/TICKET-xxx.md
-
---------------------------------------------------------------------------------
-  WHY THIS MATTERS
---------------------------------------------------------------------------------
-
-- Worktrees isolate experimental changes from the main codebase
-- Pull Requests enable code review before merging
-- CI/CD pipelines validate changes before they reach ${current_branch}
-- Atomic, reversible changes via PR merge/revert
-
+See: ~/.claude/logs/hooks-debug.log for details
 ================================================================================
 EOFMSG
+}
+
+# Check if staged changes are ticket lifecycle only
+# Returns 0 if ONLY ticket files modified, 1 otherwise
+is_ticket_lifecycle_only() {
+    local commit_sha="$1"
+
+    # Get files changed in the commit
+    local changed_files
+    changed_files=$(git diff-tree --no-commit-id --name-only -r "${commit_sha}" 2>/dev/null)
+
+    # If no files, something is wrong
+    [[ -z "$changed_files" ]] && return 1
+
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+
+        # Must be in ticket workflow directories
+        if [[ ! "$file" =~ ^tickets/(queue|active|completed|archive)/ ]]; then
+            debug_log "Non-ticket directory: $file"
+            return 1
+        fi
+
+        # Extract filename from path
+        local filename
+        filename=$(basename "$file")
+
+        # Must be a ticket or handoff markdown file
+        if [[ ! "$filename" =~ ^(TICKET|HANDOFF)-[a-zA-Z0-9-]+\.md$ ]]; then
+            debug_log "Invalid ticket filename: $filename (must be TICKET-*.md or HANDOFF-*.md)"
+            return 1
+        fi
+    done <<< "$changed_files"
+
+    debug_log "Ticket lifecycle commit validated (all files are valid ticket files)"
+    return 0
 }
 
 # Main execution
@@ -214,21 +209,21 @@ main() {
         cwd=$(pwd)
     fi
 
-    debug_log "Checking command: ${command:0:100}"
+    debug_log "PostToolUse checking command: ${command:0:100}"
 
     # Quick check: is this a git commit command?
     if ! is_git_commit_command "${command}"; then
         exit 0
     fi
 
-    debug_log "Git commit command detected, checking branch..."
+    debug_log "Git commit command detected, checking if on protected branch..."
 
     # Get current branch
     local current_branch
     current_branch=$(get_current_branch "${cwd}")
 
     if [[ -z "${current_branch}" ]]; then
-        debug_log "Could not determine current branch, allowing operation"
+        debug_log "Could not determine current branch, skipping detection"
         exit 0
     fi
 
@@ -236,20 +231,20 @@ main() {
 
     # Check if on protected branch
     if is_protected_branch "${current_branch}"; then
-        # Exception: Allow ticket lifecycle commits on protected branches
-        if is_ticket_lifecycle_only; then
-            debug_log "ALLOWED: Ticket lifecycle commit on protected branch"
-            debug_log "AUDIT: Ticket lifecycle commit - branch=${current_branch}, files=$(git diff --cached --name-only 2>/dev/null | tr '\n' ' ')"
+        # Get the commit SHA (HEAD after commit)
+        local commit_sha
+        commit_sha=$(git -C "${cwd}" rev-parse HEAD 2>/dev/null || echo "unknown")
+
+        debug_log "DETECTED: Commit on protected branch - branch=${current_branch}, commit=${commit_sha}"
+
+        # Exception: Allow ticket lifecycle commits
+        if is_ticket_lifecycle_only "${commit_sha}"; then
+            debug_log "ALLOWED: Ticket lifecycle commit detected (commit=${commit_sha})"
+            debug_log "AUDIT: Ticket lifecycle commit on protected branch - branch=${current_branch}, commit=${commit_sha}"
             exit 0
         fi
 
-        # Block the commit
-        generate_error_message "${current_branch}" "${command}" >&2
-
-        # Log for audit
-        debug_log "AUDIT: Blocked git commit on protected branch - branch=${current_branch}, command=${command:0:100}"
-
-        # Log violation for QC Observer (fail-safe - errors won't break blocking)
+        # Log violation for QC Observer (fail-safe - errors won't break hook)
         # Use jq for safe JSON construction to prevent injection attacks
         local violation_json
         violation_json=$(jq -n \
@@ -257,30 +252,42 @@ main() {
             --arg tool "Bash" \
             --arg cmd "${command:0:200}" \
             --arg branch "${current_branch}" \
+            --arg sha "${commit_sha}" \
             '{
                 "type": "workflow-guard",
                 "timestamp": $ts,
-                "observation_type": "blocking",
+                "observation_type": "detection",
                 "cycle": "inferred",
                 "session_id": "",
                 "agent": null,
                 "tool": $tool,
                 "tool_input": {"command": $cmd},
-                "violation": "protected_branch_commit",
-                "severity": "CRITICAL",
-                "blocking": true,
-                "context": {"branch": $branch, "protected_branches": "main,master,production"}
+                "violation": "protected_branch_commit_detected",
+                "severity": "HIGH",
+                "blocking": false,
+                "context": {
+                    "branch": $branch,
+                    "commit_sha": $sha,
+                    "protected_branches": "main,master,production",
+                    "detection_type": "PostToolUse"
+                }
             }' 2>/dev/null || true)
 
         if [[ -n "${violation_json}" ]]; then
             printf '%s' "${violation_json}" | "${SCRIPT_DIR}/observe-violation.sh" 2>/dev/null || true
         fi
 
-        # Exit code 2 blocks the tool execution
-        exit 2
+        # Show warning message to user (non-blocking)
+        generate_warning_message "${current_branch}" "${command}" "${commit_sha}" >&2
+
+        # Log for audit
+        debug_log "AUDIT: Protected branch commit detected (PostToolUse) - branch=${current_branch}, commit=${commit_sha}, command=${command:0:100}"
+
+        # Exit 0 - this is detection only, not blocking
+        exit 0
     fi
 
-    debug_log "Branch ${current_branch} is not protected, allowing commit"
+    debug_log "Branch ${current_branch} is not protected, commit allowed"
 
     # Allow the operation
     exit 0

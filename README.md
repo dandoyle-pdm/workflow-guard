@@ -47,9 +47,9 @@ Each handoff command automatically:
 
 ### Hooks
 
-Seven PreToolUse hooks enforce workflow discipline and quality cycles:
+Seven PreToolUse hooks enforce workflow discipline and quality cycles, plus one PostToolUse hook for comprehensive commit detection:
 
-#### block-main-commits
+#### block-main-commits (PreToolUse)
 
 Blocks `git commit` commands when on protected branches (main, master, production).
 
@@ -57,7 +57,12 @@ Blocks `git commit` commands when on protected branches (main, master, productio
 - Detects any `git commit` variant (with flags, paths, etc.)
 - Checks current branch against protected list
 - Blocks with helpful error message showing correct worktree workflow
-- Logs blocked attempts for audit
+- Logs violations via observe-violation.sh for audit
+- Logs blocked attempts for debug logs
+
+**Important Limitation:**
+
+`git commit` is in Claude Code's allowlist, meaning PreToolUse hooks never evaluate it in practice. This hook exists for defense-in-depth, but the primary protection comes from `detect-protected-commits` (PostToolUse hook below).
 
 #### enforce-pr-workflow
 
@@ -187,6 +192,43 @@ tickets/active/TICKET-quality-gate-001/TICKET-quality-gate-001.md  ✗ (director
 - Session-id based directories allow multiple sequential tickets (001, 002, etc.)
 - Lowercase-with-hyphens prevents case-sensitivity issues across platforms
 - Automated workflows rely on these patterns to function correctly
+
+#### detect-protected-commits (PostToolUse)
+
+Detects commits that land on protected branches after execution completes. This provides comprehensive detection for allowlisted commands that bypass PreToolUse hooks.
+
+**Behavior:**
+- Runs AFTER `git commit` completes (PostToolUse event)
+- Detects when HEAD is on a protected branch (main, master, production)
+- Logs violations via observe-violation.sh for audit
+- Shows warning message to user
+- Allows ticket lifecycle commits (exception)
+- Detection-only (non-blocking, commit already happened)
+
+**Why this hook exists:**
+
+The `git commit` command is in Claude Code's **allowlist**, meaning PreToolUse hooks never evaluate it. This creates a detection gap where commits to protected branches would go completely unnoticed. PostToolUse hooks DO fire for allowlisted commands (after execution), so this hook provides after-the-fact detection and comprehensive violation logging.
+
+**Example workflow:**
+
+1. User runs `git commit -m "fix"` on main branch
+2. `block-main-commits` PreToolUse hook DOES NOT fire (allowlisted command)
+3. Commit completes successfully
+4. `detect-protected-commits` PostToolUse hook DOES fire
+5. Hook detects commit on protected branch
+6. Violation logged via observe-violation.sh
+7. Warning message shown to user
+
+**Allowlist Implications:**
+
+Claude Code maintains an allowlist of "safe" commands that bypass PreToolUse hooks for performance. This includes basic git operations like `git commit`, `git add`, `git status`. While this improves performance, it creates a gap for workflow enforcement. The PostToolUse approach:
+
+- **Complements** PreToolUse hooks for defense-in-depth
+- **Provides detection** when prevention isn't possible
+- **Logs violations** for audit and alerting
+- **Informs users** of workflow violations after-the-fact
+
+This two-layer approach (PreToolUse blocking + PostToolUse detection) ensures comprehensive coverage even when commands bypass initial validation.
 
 ## Configuration
 

@@ -80,5 +80,17 @@
         }
       ]
     }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/detect-protected-commits.sh",
+          "timeout": 10
+        }
+      ]
+    }
   ]
 }
