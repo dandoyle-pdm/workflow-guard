@@ -2,7 +2,7 @@
 description: Kickstart session with quality chain coordination
 ---
 
-Use ultrathink to coordinate quality chains for this kickoff.
+Use ultrathink to coordinate quality transformers for this kickoff.
 
 ## Kickoff Prompt
 
@@ -11,12 +11,14 @@ $ARGUMENTS
 ## Handoff Detection
 
 Check if input contains 2+ handoff markers:
+
 - "Session Type:" or "## Session Type" or "Session Continuation:"
 - "Next Steps:" or "## Next Steps"
 - "TICKET-" references
 - "Current Understanding:" or "## Current Understanding"
 
 If detected (2+ markers present):
+
 1. **Extract session type** from "Session Type:" or "Session Continuation:" line
 2. **Map to quality chain**: DEBUGGING→R1(code-tester), DEVELOPMENT→R1(code-developer), EMERGENCY HOTFIX→R5(code-developer), INVESTIGATION→R4(fast-path, no agent)
 3. **Extract ticket ref** from "Ticket Reference:" or scan for "TICKET-{id}-{seq}"
@@ -34,15 +36,15 @@ If detected (2+ markers present):
 
 ## Quality Recipes
 
-| Type | Recipe | Chain | Starting Agent |
-|------|--------|-------|----------------|
-| Code | R1 | Creator→Critic→Judge | code-developer |
-| Docs (100+ lines) | R2 | Creator→Critic→Judge | tech-writer |
-| Handoff/prompts | R3 | Quick check | tech-editor |
-| Read-only | R4 | None | - |
-| Config/minor | R5 | Single reviewer | code-reviewer |
-| Plugin | Plugin | Creator→Critic→Judge | plugin-engineer |
-| Prompt | Prompt | Creator→Critic→Judge | prompt-engineer |
+| Type              | Recipe | Chain                | Starting Agent  |
+| ----------------- | ------ | -------------------- | --------------- |
+| Code              | R1     | Creator→Critic→Judge | code-developer  |
+| Docs (100+ lines) | R2     | Creator→Critic→Judge | tech-writer     |
+| Handoff/prompts   | R3     | Quick check          | tech-editor     |
+| Read-only         | R4     | None                 | -               |
+| Config/minor      | R5     | Single reviewer      | code-reviewer   |
+| Plugin            | Plugin | Creator→Critic→Judge | plugin-engineer |
+| Prompt            | Prompt | Creator→Critic→Judge | prompt-engineer |
 
 ## Rules
 
@@ -55,6 +57,7 @@ If detected (2+ markers present):
 ## Ticket Template
 
 Use project's `tickets/TEMPLATE.md` for structure. Key fields:
+
 - `ticket_id`: TICKET-{session-id}-{sequence}
 - `cycle_type`: development|documentation|architecture
 - `status`: open → in_progress → critic_review → approved
