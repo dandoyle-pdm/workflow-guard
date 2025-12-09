@@ -5,6 +5,11 @@
       "hooks": [
         {
           "type": "command",
+          "command": "engine/bin/dispatcher",
+          "timeout": 5
+        },
+        {
+          "type": "command",
           "command": "hooks/block-main-commits.sh",
           "timeout": 10
         },
@@ -31,8 +36,13 @@
       ]
     },
     {
-      "matcher": "Edit|Write",
+      "matcher": "Edit|Write|NotebookEdit",
       "hooks": [
+        {
+          "type": "command",
+          "command": "engine/bin/dispatcher",
+          "timeout": 5
+        },
         {
           "type": "command",
           "command": "hooks/confirm-code-edits.sh",

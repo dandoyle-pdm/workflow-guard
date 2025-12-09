@@ -73,7 +73,7 @@ func executeDecision(action *config.Action, event *conditions.HookEvent) *Respon
 		resp.ExitCode = 0
 		resp.Decision = "allow"
 	case "ask":
-		resp.ExitCode = 0
+		resp.ExitCode = 1 // Claude Code uses exit 1 for confirmation prompts
 		resp.Decision = "ask"
 		resp.Message = message
 	default:
