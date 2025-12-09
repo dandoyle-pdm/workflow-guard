@@ -261,6 +261,7 @@ main() {
         --arg tool "${tool_name}" \
         --arg file "${file_path}" \
         '{
+            "type": "workflow-guard",
             "timestamp": $ts,
             "observation_type": "blocking",
             "cycle": "inferred",

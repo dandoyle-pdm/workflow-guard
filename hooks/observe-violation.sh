@@ -6,9 +6,10 @@
 #
 # Expected JSON input format:
 # {
+#   "type": "workflow-guard|claude-mem|session-lifecycle|mcp-health|agent-dispatch",
 #   "timestamp": "ISO-8601",
 #   "observation_type": "blocking",
-#   "cycle": "coding|plugin|prompt|tech",
+#   "cycle": "coding|plugin|prompt|tech|inferred",
 #   "session_id": "session-id",
 #   "agent": "agent-name or null",
 #   "tool": "Edit|Write|NotebookEdit",
@@ -18,6 +19,13 @@
 #   "blocking": true|false,
 #   "context": {}
 # }
+#
+# Type values:
+#   workflow-guard    - QC enforcement, branch protection (quality cycle violations)
+#   claude-mem        - Memory MCP (future - knowledge storage events)
+#   session-lifecycle - Claude Code core (future - session events)
+#   mcp-health        - MCP servers (future - server availability)
+#   agent-dispatch    - Task tool (future - subagent tracking)
 
 set -euo pipefail
 
