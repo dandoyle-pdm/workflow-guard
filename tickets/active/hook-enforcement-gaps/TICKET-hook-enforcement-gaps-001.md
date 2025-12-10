@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-hook-enforcement-gaps
+ticket_id: TICKET-hook-enforcement-gaps-001
 session_id: hook-enforcement-gaps
-sequence: null
+sequence: 001
 parent_ticket: null
 title: Enforce agent context for all operations and branch rules for writes
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-10 01:50
 created: 2025-12-10 03:00
 worktree_path: null
 ---
