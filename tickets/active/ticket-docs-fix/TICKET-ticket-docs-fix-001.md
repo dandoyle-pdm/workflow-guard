@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Fix critical documentation gaps in ticket workflow
 cycle_type: documentation
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-10 01:13
 created: 2025-12-10 02:30
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/ticket-docs-fix
 ---
 
 # Requirements
@@ -35,7 +35,7 @@ Clarify terminology:
 
 Add "claimed" to status list (line 34):
 ```
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-10 01:13
 ```
@@ -134,3 +134,7 @@ Root cause: Documentation doesn't explicitly state that code changes must happen
 ## [2025-12-10 02:30] - Coordinator
 - Ticket created after audit revealed 10 critical documentation gaps
 - Root cause of process violation: missing explicit rules about worktree-only development
+
+## [2025-12-10 01:13] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/ticket-docs-fix
+- Branch: ticket/ticket-docs-fix
