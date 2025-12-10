@@ -734,6 +734,34 @@ tickets/queue/TICKET-quality-gate-002.md
 
 ## Workflow Overview
 
+### Critical Rule: Worktree-Only Development
+
+**Implementation happens ONLY in worktree, never on main branch.**
+
+Main branch receives only ticket metadata commits (creation, claiming, completion). All code changes must go through feature branch + PR workflow in a worktree.
+
+### GitOps Locking Pattern
+
+Ticket activation uses a two-phase GitOps locking pattern to prevent duplicate work:
+
+**Phase 1 - Claiming (GitOps Lock Acquisition):**
+1. Ticket moves from `queue/` to `active/` on main branch
+2. Committed and pushed to remote main branch
+3. Push success = distributed lock acquired (you own this ticket)
+4. Push failure = another developer claimed it first (lock contention)
+
+**Phase 2 - Activation (Worktree Creation):**
+1. Feature branch created from main (e.g., `ticket/session-id`)
+2. Worktree created at `$WORKTREE_BASE/{project}/{session-id}`
+3. Ticket file exists in worktree at `tickets/active/{session-id}/TICKET-xxx-001.md`
+4. All implementation work happens in this isolated worktree
+
+**Terminology:**
+- **Availability** = ticket is pushed to main, visible to all developers
+- **Locking** = ticket is activated/claimed, one developer owns it (via GitOps push)
+
+### Workflow Steps
+
 ```
 1. Activate ticket (creates worktree automatically)
    scripts/activate-ticket.sh tickets/queue/TICKET-xxx-001.md

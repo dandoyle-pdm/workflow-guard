@@ -31,7 +31,7 @@ sequence: {assigned at activation: 001, 002, etc}
 parent_ticket: {null or TICKET-session-id-###}
 title: {Brief description of work}
 cycle_type: {development|documentation|architecture|product|design}
-status: {open|in_progress|critic_review|expediter_review|approved|blocked}
+status: {open|claimed|in_progress|critic_review|expediter_review|approved|blocked}
 created: {YYYY-MM-DD HH:MM}
 worktree_path: {/path/to/worktree or null}
 ---
