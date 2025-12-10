@@ -318,7 +318,7 @@ main() {
     json_input=$(cat)
 
     # Parse JSON fields
-    local tool_name file_path transcript_path
+    local tool_name file_path transcript_path cwd
 
     if command -v jq >/dev/null 2>&1; then
         # Use jq for reliable JSON parsing
@@ -341,6 +341,10 @@ main() {
             debug_log "WARNING: Failed to parse transcript_path from JSON"
             transcript_path=""
         fi
+
+        if ! cwd=$(printf '%s\n' "${json_input}" | jq -r '.cwd // ""' 2>/dev/null); then
+            cwd=""
+        fi
     else
         # Fallback to sed-based parsing (portable, no PCRE required)
         tool_name=$(printf '%s\n' "${json_input}" | sed -n 's/.*"tool_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
@@ -356,6 +360,7 @@ main() {
         fi
 
         transcript_path=$(printf '%s\n' "${json_input}" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
+        cwd=$(printf '%s\n' "${json_input}" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
     fi
 
     # Validate we got a file path
@@ -370,9 +375,13 @@ main() {
     if is_workflow_metadata "${file_path}"; then
         debug_log "Workflow metadata file detected, checking branch rules..."
 
-        # Get current branch
+        # Get current branch (use cwd if provided, else file's directory)
         local current_branch
-        current_branch=$(get_current_branch)
+        local branch_cwd="${cwd}"
+        if [[ -z "${branch_cwd}" ]]; then
+            branch_cwd=$(dirname "${file_path}")
+        fi
+        current_branch=$(get_current_branch "${branch_cwd}")
 
         # If on protected branch, apply additional ticket rules
         if [[ -n "${current_branch}" ]] && is_protected_branch "${current_branch}"; then
@@ -406,9 +415,13 @@ main() {
     if [[ -n "${transcript_path}" ]] && has_quality_agent_context "${transcript_path}"; then
         debug_log "Quality agent context detected, checking branch rules..."
 
-        # Get current branch
+        # Get current branch (use cwd if provided, else file's directory)
         local current_branch
-        current_branch=$(get_current_branch)
+        local branch_cwd="${cwd}"
+        if [[ -z "${branch_cwd}" ]]; then
+            branch_cwd=$(dirname "${file_path}")
+        fi
+        current_branch=$(get_current_branch "${branch_cwd}")
 
         # If on protected branch, block non-ticket file modifications
         if [[ -n "${current_branch}" ]] && is_protected_branch "${current_branch}"; then
