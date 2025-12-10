@@ -379,8 +379,19 @@ main() {
         local current_branch
         local branch_cwd="${cwd}"
         if [[ -z "${branch_cwd}" ]]; then
+            debug_log "WARNING: cwd is empty, falling back to dirname for branch detection"
             branch_cwd=$(dirname "${file_path}")
         fi
+
+        # Validate we're in a git repo before trusting branch detection
+        if ! git -C "${branch_cwd}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            debug_log "BLOCKED: Cannot reliably determine branch (not in git repo) - fail-secure"
+            printf '%sERROR: Cannot determine git branch for safe operation%s\n' "${RED}" "${NC}" >&2
+            printf 'Directory checked: %s\n' "${branch_cwd}" >&2
+            printf 'This operation requires reliable branch detection for security.\n' >&2
+            exit 2
+        fi
+
         current_branch=$(get_current_branch "${branch_cwd}")
 
         # If on protected branch, apply additional ticket rules
@@ -419,8 +430,19 @@ main() {
         local current_branch
         local branch_cwd="${cwd}"
         if [[ -z "${branch_cwd}" ]]; then
+            debug_log "WARNING: cwd is empty, falling back to dirname for branch detection"
             branch_cwd=$(dirname "${file_path}")
         fi
+
+        # Validate we're in a git repo before trusting branch detection
+        if ! git -C "${branch_cwd}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            debug_log "BLOCKED: Cannot reliably determine branch (not in git repo) - fail-secure"
+            printf '%sERROR: Cannot determine git branch for safe operation%s\n' "${RED}" "${NC}" >&2
+            printf 'Directory checked: %s\n' "${branch_cwd}" >&2
+            printf 'This operation requires reliable branch detection for security.\n' >&2
+            exit 2
+        fi
+
         current_branch=$(get_current_branch "${branch_cwd}")
 
         # If on protected branch, block non-ticket file modifications
