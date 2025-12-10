@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-ticket-docs-fix
+ticket_id: TICKET-ticket-docs-fix-001
 session_id: ticket-docs-fix
-sequence: null
+sequence: 001
 parent_ticket: null
 title: Fix critical documentation gaps in ticket workflow
 cycle_type: documentation
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-10 01:13
 created: 2025-12-10 02:30
 worktree_path: null
 ---
@@ -33,7 +35,9 @@ Clarify terminology:
 
 Add "claimed" to status list (line 34):
 ```
-status: {open|claimed|in_progress|critic_review|expediter_review|approved|blocked}
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-10 01:13
 ```
 
 ### 3. workflow-guard README.md
