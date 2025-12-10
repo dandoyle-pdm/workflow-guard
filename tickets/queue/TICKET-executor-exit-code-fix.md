@@ -78,17 +78,41 @@ This was based on an incorrect assumption about Claude Code's spec. The actual s
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+Fixed two files to implement correct Claude Code hook exit code semantics:
+
+1. **engine/internal/actions/executor.go** (executeDecision function):
+   - Changed exit codes from 2 (deny) and 1 (ask) to 0 for ALL decisions
+   - Added comments explaining "Exit 0 + JSON for structured decisions"
+   - All decision types (allow/deny/ask) now use exit 0
+
+2. **engine/cmd/dispatcher/main.go** (response output):
+   - Changed output format from flat JSON to official `hookSpecificOutput` wrapper
+   - Changed `message` field to `permissionDecisionReason` per spec
+   - Added `hookEventName: "PreToolUse"` field per spec
+   - Structure: `{hookSpecificOutput: {hookEventName, permissionDecision, permissionDecisionReason}}`
+
+3. **Testing performed**:
+   - `cat > test.sh` → Returns exit 0 + JSON with permissionDecision: "ask" (confirmation required)
+   - `cat > test.sh` with SKIP_EDIT_CONFIRMATION=true → Returns exit 0 + JSON with permissionDecision: "deny" (blocked)
+   - `ls -la` → No output, exit 0 (allowed by default, no rule matched)
+   - All tests verify exit 0 is used for structured decisions
 
 ## Questions/Concerns
-- Should we also fix the bash hooks (confirm-code-edits.sh, block-unreviewed-edits.sh) that use exit 1/2?
-- Or will the dispatcher handle everything going forward?
+- Bash hooks (confirm-code-edits.sh, block-unreviewed-edits.sh) still use old exit codes (1/2)
+- These are legacy hooks that predate the declarative engine
+- The declarative engine (dispatcher) now handles these cases correctly
+- Legacy hooks should eventually be deprecated in favor of declarative rules
 
 ## Changes Made
 - File changes:
+  - engine/internal/actions/executor.go: Changed exit codes 1/2 to 0 for ask/deny decisions
+  - engine/cmd/dispatcher/main.go: Changed JSON output to official hookSpecificOutput format
+  - Rebuilt binaries: make build (dispatcher + hookctl)
 - Commits:
+  - 2fbd6bd: "fix: use correct Claude Code hook exit code semantics"
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Status Update**: [2025-12-10 02:15] - Changed status to `critic_review`
 
 # Critic Section
 
