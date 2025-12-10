@@ -66,14 +66,14 @@ func executeDecision(action *config.Action, event *conditions.HookEvent) *Respon
 	resp := &Response{}
 	switch decision {
 	case "deny", "block":
-		resp.ExitCode = 2
+		resp.ExitCode = 0 // Exit 0 + JSON for structured decisions
 		resp.Decision = "deny"
 		resp.Message = message
 	case "allow":
 		resp.ExitCode = 0
 		resp.Decision = "allow"
 	case "ask":
-		resp.ExitCode = 1 // Claude Code uses exit 1 for confirmation prompts
+		resp.ExitCode = 0 // Exit 0 + JSON for structured decisions
 		resp.Decision = "ask"
 		resp.Message = message
 	default:

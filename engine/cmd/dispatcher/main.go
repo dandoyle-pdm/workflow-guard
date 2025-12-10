@@ -56,13 +56,15 @@ func main() {
 	// Dispatch to rule engine
 	response := rules.Dispatch(&event, cfg)
 
-	// Output response
+	// Output response in official Claude Code format
 	if response.Decision != "" {
-		output := map[string]string{
-			"permissionDecision": response.Decision,
+		hookOutput := map[string]interface{}{
+			"hookEventName":             "PreToolUse",
+			"permissionDecision":        response.Decision,
+			"permissionDecisionReason":  response.Message,
 		}
-		if response.Message != "" {
-			output["message"] = response.Message
+		output := map[string]interface{}{
+			"hookSpecificOutput": hookOutput,
 		}
 		json.NewEncoder(os.Stdout).Encode(output)
 	}
