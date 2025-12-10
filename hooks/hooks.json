@@ -61,6 +61,16 @@
       ]
     },
     {
+      "matcher": "Read|Glob|Grep",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/block-main-thread-reads.sh",
+          "timeout": 5
+        }
+      ]
+    },
+    {
       "matcher": "Write",
       "hooks": [
         {

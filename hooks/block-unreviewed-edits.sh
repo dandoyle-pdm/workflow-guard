@@ -82,6 +82,79 @@ is_workflow_metadata() {
     return 1
 }
 
+# Check if file is a ticket in queue/ without sequence number
+# Pattern: tickets/queue/TICKET-{session-id}.md (no sequence)
+is_ticket_queue_file() {
+    local file_path="$1"
+
+    # Normalize path
+    local normalized_path
+    normalized_path=$(printf '%s' "$file_path" | sed 's|//|/|g; s|/\./|/|g')
+
+    # Match pattern: tickets/queue/TICKET-{session-id}.md (no -NNN sequence)
+    if [[ "$normalized_path" =~ tickets/queue/TICKET-[a-zA-Z0-9_-]+\.md$ ]] && \
+       [[ ! "$normalized_path" =~ tickets/queue/TICKET-[a-zA-Z0-9_-]+-[0-9]+\.md$ ]]; then
+        debug_log "Ticket queue file detected (no sequence): $file_path"
+        return 0
+    fi
+
+    return 1
+}
+
+# Check if file is a ticket with sequence number
+# Pattern: tickets/*/TICKET-{session-id}-{sequence}.md
+is_ticket_with_sequence() {
+    local file_path="$1"
+
+    # Normalize path
+    local normalized_path
+    normalized_path=$(printf '%s' "$file_path" | sed 's|//|/|g; s|/\./|/|g')
+
+    # Match pattern: tickets/any-dir/TICKET-{session-id}-{sequence}.md
+    if [[ "$normalized_path" =~ tickets/.*/TICKET-[a-zA-Z0-9_-]+-[0-9]+\.md$ ]]; then
+        debug_log "Ticket with sequence detected: $file_path"
+        return 0
+    fi
+
+    return 1
+}
+
+# Get current git branch
+get_current_branch() {
+    local cwd="${1:-$(pwd)}"
+
+    # Try to get branch from git
+    if git -C "${cwd}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git -C "${cwd}" branch --show-current 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
+
+# Check if branch is protected
+is_protected_branch() {
+    local branch="$1"
+
+    # Protected branches - can be extended via environment variable
+    local default_protected="main master production"
+    local protected_branches="${CLAUDE_PROTECTED_BRANCHES:-${default_protected}}"
+
+    # Strip origin/ prefix if present
+    local clean_branch="${branch#origin/}"
+
+    # Convert space-separated string to array
+    local protected_array=()
+    read -ra protected_array <<< "${protected_branches}"
+
+    for protected in "${protected_array[@]}"; do
+        if [[ "${clean_branch}" == "${protected}" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 # Check if transcript contains quality agent identity
 # Returns 0 if quality agent detected, 1 otherwise
 has_quality_agent_context() {
@@ -120,8 +193,66 @@ has_quality_agent_context() {
 generate_error_message() {
     local file_path="$1"
     local tool_name="$2"
+    local reason="${3:-no_agent}"
 
-    cat <<EOFMSG
+    if [[ "$reason" == "protected_branch" ]]; then
+        cat <<EOFMSG
+
+================================================================================
+  WORKTREE REQUIRED - Protected Branch Write Restriction
+================================================================================
+
+You attempted to ${tool_name} a file on a protected branch:
+  ${file_path}
+
+Writes to protected branches must occur in worktrees, not directly on main.
+
+--------------------------------------------------------------------------------
+  TICKET LIFECYCLE RULES
+--------------------------------------------------------------------------------
+
+On protected branches (main/master/production):
+
+  ALLOWED:
+    - Ticket creation: tickets/queue/TICKET-{session-id}.md (no sequence)
+    - Ticket lifecycle: activate-ticket.sh, complete-ticket.sh
+
+  BLOCKED:
+    - Tickets with sequence: tickets/*/TICKET-{session-id}-NNN.md
+    - Implementation files: code, configs, docs
+    - Any file modifications during development
+
+--------------------------------------------------------------------------------
+  CORRECT WORKFLOW
+--------------------------------------------------------------------------------
+
+1. Create ticket on main:
+   Write tickets/queue/TICKET-my-work.md
+
+2. Activate ticket (creates worktree):
+   scripts/activate-ticket.sh tickets/queue/TICKET-my-work.md
+
+3. Work in worktree:
+   cd \$WORKTREE_BASE/<project>/<branch>
+   # Make changes, commits happen here with sequence numbers
+
+4. Complete and PR:
+   scripts/complete-ticket.sh tickets/active/<branch>/TICKET-my-work-001.md
+   gh pr create --base main
+
+--------------------------------------------------------------------------------
+  WHY THIS MATTERS
+--------------------------------------------------------------------------------
+
+- Protected branches remain stable during development
+- Worktrees isolate experimental changes
+- Pull Requests enable review before merge
+- Prevents accidental commits to main
+
+================================================================================
+EOFMSG
+    else
+        cat <<EOFMSG
 
 ================================================================================
   QUALITY TRANSFORMER REQUIRED - Quality Cycle Enforcement
@@ -177,6 +308,7 @@ as they are session coordination, not production code.
 
 ================================================================================
 EOFMSG
+    fi
 }
 
 # Main execution
@@ -186,7 +318,7 @@ main() {
     json_input=$(cat)
 
     # Parse JSON fields
-    local tool_name file_path transcript_path
+    local tool_name file_path transcript_path cwd
 
     if command -v jq >/dev/null 2>&1; then
         # Use jq for reliable JSON parsing
@@ -209,6 +341,10 @@ main() {
             debug_log "WARNING: Failed to parse transcript_path from JSON"
             transcript_path=""
         fi
+
+        if ! cwd=$(printf '%s\n' "${json_input}" | jq -r '.cwd // ""' 2>/dev/null); then
+            cwd=""
+        fi
     else
         # Fallback to sed-based parsing (portable, no PCRE required)
         tool_name=$(printf '%s\n' "${json_input}" | sed -n 's/.*"tool_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
@@ -224,6 +360,7 @@ main() {
         fi
 
         transcript_path=$(printf '%s\n' "${json_input}" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
+        cwd=$(printf '%s\n' "${json_input}" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
     fi
 
     # Validate we got a file path
@@ -234,21 +371,96 @@ main() {
 
     debug_log "Checking ${tool_name} operation on: ${file_path}"
 
-    # Exception 1: Workflow metadata files (tickets, handoffs)
+    # Exception 1: Workflow metadata files (tickets, handoffs) - but with branch rules
     if is_workflow_metadata "${file_path}"; then
+        debug_log "Workflow metadata file detected, checking branch rules..."
+
+        # Get current branch (use cwd if provided, else file's directory)
+        local current_branch
+        local branch_cwd="${cwd}"
+        if [[ -z "${branch_cwd}" ]]; then
+            debug_log "WARNING: cwd is empty, falling back to dirname for branch detection"
+            branch_cwd=$(dirname "${file_path}")
+        fi
+
+        # Validate we're in a git repo before trusting branch detection
+        if ! git -C "${branch_cwd}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            debug_log "BLOCKED: Cannot reliably determine branch (not in git repo) - fail-secure"
+            printf '%sERROR: Cannot determine git branch for safe operation%s\n' "${RED}" "${NC}" >&2
+            printf 'Directory checked: %s\n' "${branch_cwd}" >&2
+            printf 'This operation requires reliable branch detection for security.\n' >&2
+            exit 2
+        fi
+
+        current_branch=$(get_current_branch "${branch_cwd}")
+
+        # If on protected branch, apply additional ticket rules
+        if [[ -n "${current_branch}" ]] && is_protected_branch "${current_branch}"; then
+            debug_log "On protected branch: ${current_branch}"
+
+            # Allow ticket queue files (no sequence) on protected branches
+            if is_ticket_queue_file "${file_path}"; then
+                debug_log "ALLOWED: Ticket queue file on protected branch"
+                exit 0
+            fi
+
+            # Block tickets with sequence numbers on protected branches
+            if is_ticket_with_sequence "${file_path}"; then
+                debug_log "BLOCKED: Ticket with sequence on protected branch (must use worktree)"
+                generate_error_message "${file_path}" "${tool_name}" "protected_branch" >&2
+                debug_log "AUDIT: Blocked ticket with sequence on protected branch - file=${file_path}, branch=${current_branch}"
+                exit 2
+            fi
+
+            # Allow other workflow metadata (handoffs, ticket lifecycle scripts)
+            debug_log "ALLOWED: Workflow metadata on protected branch"
+            exit 0
+        fi
+
+        # Not on protected branch - allow all workflow metadata
         debug_log "ALLOWED: Workflow metadata file exception"
         exit 0
     fi
 
     # Exception 2: Quality agent context detected
     if [[ -n "${transcript_path}" ]] && has_quality_agent_context "${transcript_path}"; then
+        debug_log "Quality agent context detected, checking branch rules..."
+
+        # Get current branch (use cwd if provided, else file's directory)
+        local current_branch
+        local branch_cwd="${cwd}"
+        if [[ -z "${branch_cwd}" ]]; then
+            debug_log "WARNING: cwd is empty, falling back to dirname for branch detection"
+            branch_cwd=$(dirname "${file_path}")
+        fi
+
+        # Validate we're in a git repo before trusting branch detection
+        if ! git -C "${branch_cwd}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            debug_log "BLOCKED: Cannot reliably determine branch (not in git repo) - fail-secure"
+            printf '%sERROR: Cannot determine git branch for safe operation%s\n' "${RED}" "${NC}" >&2
+            printf 'Directory checked: %s\n' "${branch_cwd}" >&2
+            printf 'This operation requires reliable branch detection for security.\n' >&2
+            exit 2
+        fi
+
+        current_branch=$(get_current_branch "${branch_cwd}")
+
+        # If on protected branch, block non-ticket file modifications
+        if [[ -n "${current_branch}" ]] && is_protected_branch "${current_branch}"; then
+            debug_log "BLOCKED: Quality agent write on protected branch (must use worktree)"
+            generate_error_message "${file_path}" "${tool_name}" "protected_branch" >&2
+            debug_log "AUDIT: Blocked quality agent write on protected branch - file=${file_path}, branch=${current_branch}"
+            exit 2
+        fi
+
+        # Not on protected branch - allow with quality agent context
         debug_log "ALLOWED: Quality agent context detected"
         debug_log "AUDIT: Quality agent edit - tool=${tool_name}, file=${file_path}"
         exit 0
     fi
 
     # Block the operation - no quality agent context
-    generate_error_message "${file_path}" "${tool_name}" >&2
+    generate_error_message "${file_path}" "${tool_name}" "no_agent" >&2
 
     # Log for audit
     debug_log "AUDIT: Blocked ${tool_name} without quality agent - file=${file_path}"
