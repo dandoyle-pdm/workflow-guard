@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Fix critical documentation gaps in ticket workflow
 cycle_type: documentation
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-10 01:13
 created: 2025-12-10 02:30
@@ -79,17 +79,58 @@ Root cause: Documentation doesn't explicitly state that code changes must happen
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+Fixed all three critical documentation gaps identified in the audit:
+
+### 1. Global CLAUDE.md (~/.claude/CLAUDE.md)
+**Location:** Outside worktree (edited directly at ~/.claude/CLAUDE.md)
+
+Added to Commit Workflow section:
+- Core Rule: "For ticket creation: push to remote immediately after commit (GitOps locking)"
+- Branch Rules subsection with three explicit rules:
+  - "Code changes happen in worktree ONLY"
+  - "Main branch only receives ticket metadata commits (creation, claiming, completion)"
+  - "All implementation must go through feature branch + PR"
+
+Added Terminology Clarification to Process Anti-Patterns section:
+- "main thread" = Claude agent context (coordinator vs subagent)
+- "main branch" = git branch (protected, ticket metadata only)
+- Clear statement these are DIFFERENT concepts
+
+### 2. TEMPLATE.md (in worktree)
+Added "claimed" to status list on line 34:
+```
+status: {open|claimed|in_progress|critic_review|expediter_review|approved|blocked}
+```
+
+### 3. README.md (in worktree)
+Restructured Workflow Overview section with three new subsections:
+
+**Critical Rule: Worktree-Only Development**
+- Explicit statement: "Implementation happens ONLY in worktree, never on main branch"
+- Clarifies main branch is for ticket metadata only
+
+**GitOps Locking Pattern**
+- Phase 1 (Claiming): Ticket moves queue/ → active/, push to main = distributed lock
+- Phase 2 (Activation): Worktree creation on feature branch for development
+- Push success = lock acquired, push failure = contention
+
+**Terminology**
+- Availability = ticket pushed to main, visible to all
+- Locking = ticket activated/claimed, developer owns it
 
 ## Questions/Concerns
-- Should we also document what happens if push fails during Phase 1?
-- Should we add examples showing full lifecycle?
+None - all requirements addressed comprehensively.
 
 ## Changes Made
 - File changes:
+  - ~/.claude/CLAUDE.md (direct edit, outside worktree)
+  - tickets/TEMPLATE.md (in worktree)
+  - README.md (in worktree)
 - Commits:
+  - 812a4a9: docs: fix critical workflow documentation gaps (worktree files only)
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Status Update**: 2025-12-10 02:45 - Changed status to `critic_review`
 
 # Critic Section
 
