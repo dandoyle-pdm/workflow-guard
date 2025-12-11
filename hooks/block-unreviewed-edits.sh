@@ -382,11 +382,10 @@ main() {
                 # Use -print0 and process substitution for safe path handling
                 local found_transcript=""
                 while IFS= read -r -d '' transcript; do
-                    if [[ -f "$transcript" ]]; then
-                        found_transcript="$transcript"
-                        break
-                    fi
-                done < <(find "$claude_projects" -name "*.jsonl" -type f -mmin -5 -print0 2>/dev/null | head -z -1)
+                    found_transcript="$transcript"
+                    break
+                done < <(find "$claude_projects" -name "*.jsonl" -type f -mmin -5 -print0 2>/dev/null |
+                        xargs -0 -r ls -t 2>/dev/null | head -n1 | tr '\n' '\0')
 
                 if [[ -n "$found_transcript" ]]; then
                     transcript_path="$found_transcript"
