@@ -109,13 +109,34 @@ Option A (environment variable fallback) is safest:
 # Creator Section
 
 ## Implementation Notes
-[To be filled during implementation]
+
+**Approach Selected:** Hybrid of Option A and Option B - Environment variable fallback with directory discovery as secondary fallback.
+
+**Implementation Location:** Added after JSON parsing completes (line 366-401), before validation logic. This ensures both jq and sed parsing paths benefit from the fallback.
+
+**Fallback Strategy:**
+1. **Primary:** Check if transcript_path is `/dev/null`, empty, or missing file
+2. **Strategy 1:** Use `CLAUDE_TRANSCRIPT_FILE` environment variable if set and valid
+3. **Strategy 2:** Find most recent `.jsonl` in `~/.claude/projects/` (modified within last 5 minutes)
+4. **Security:** Only search within `~/.claude/` directory to prevent path traversal
+
+**Key Implementation Details:**
+- Used process substitution `< <(find ... -print0)` for safe path handling with whitespace
+- Added comprehensive debug logging for each fallback attempt
+- Maintains fail-secure behavior if no valid transcript found
+- Time window of 5 minutes ensures we only match active sessions
 
 ## Changes Made
-- File changes:
-- Commits:
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**File changes:**
+- `/home/ddoyle/.novacloud/worktrees/workflow-guard/subagent-transcript-path/hooks/block-unreviewed-edits.sh`
+  - Added lines 366-401: Transcript path fallback logic
+  - 37 lines added (includes comments and error handling)
+
+**Commits:**
+- `29a52b6` - fix: add transcript path fallback for subagent contexts
+
+**Status Update**: 2025-12-11 00:35 - Implementation complete, ready for `critic_review`
 
 # Critic Section
 
