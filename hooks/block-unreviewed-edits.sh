@@ -363,6 +363,42 @@ main() {
         cwd=$(printf '%s\n' "${json_input}" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || echo "")
     fi
 
+    # Fallback for subagent contexts where Claude Code passes /dev/null
+    # This occurs when using the Task tool - the PreToolUse hook receives
+    # transcript_path="/dev/null" instead of the actual transcript location
+    if [[ "$transcript_path" == "/dev/null" || -z "$transcript_path" || ! -f "$transcript_path" ]]; then
+        debug_log "Transcript path invalid or missing ($transcript_path), attempting fallback discovery"
+
+        # Strategy 1: Try environment variable (can be set by wrapper scripts)
+        if [[ -n "${CLAUDE_TRANSCRIPT_FILE:-}" && -f "${CLAUDE_TRANSCRIPT_FILE}" ]]; then
+            transcript_path="${CLAUDE_TRANSCRIPT_FILE}"
+            debug_log "Using CLAUDE_TRANSCRIPT_FILE fallback: $transcript_path"
+        else
+            # Strategy 2: Find most recent transcript in Claude projects directory
+            # Security: Only search within ~/.claude/ to prevent path traversal
+            local claude_projects="${CLAUDE_HOME}/projects"
+            if [[ -d "$claude_projects" ]]; then
+                # Find .jsonl files modified in last 5 minutes (active session)
+                # Use -print0 and process substitution for safe path handling
+                local found_transcript=""
+                while IFS= read -r -d '' transcript; do
+                    found_transcript="$transcript"
+                    break
+                done < <(find "$claude_projects" -name "*.jsonl" -type f -mmin -5 -print0 2>/dev/null |
+                        xargs -0 -r ls -t 2>/dev/null | head -n1 | tr '\n' '\0')
+
+                if [[ -n "$found_transcript" ]]; then
+                    transcript_path="$found_transcript"
+                    debug_log "Using discovered transcript fallback: $transcript_path"
+                else
+                    debug_log "No recent transcript found in $claude_projects"
+                fi
+            else
+                debug_log "Claude projects directory not found: $claude_projects"
+            fi
+        fi
+    fi
+
     # Validate we got a file path
     if [[ -z "${file_path}" ]]; then
         debug_log "ERROR: Could not extract file_path from tool input"
