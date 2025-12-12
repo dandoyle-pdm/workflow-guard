@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Standardize changelog entries with enum-like role and status values
 cycle_type: development
-status: in_progress
+status: critic_review
 claimed_by: ddoyle
 claimed_at: 2025-12-11 20:25
 created: 2025-12-10 19:45
@@ -113,18 +113,48 @@ This makes tickets hard to audit and understand.
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+
+Standardized changelog entries across the ticket workflow system:
+
+1. **TEMPLATE.md Documentation**: Added comprehensive enum definitions in HTML comment header
+   - CHANGELOG_ROLE: Creator, Critic, Expediter (maps to quality cycle agents)
+   - TICKET_STATUS: Complete workflow state machine (7 states)
+   - ENTRY_TYPE: Lifecycle event types (7 types)
+   - Format specification: `## [YYYY-MM-DD HH:MM] - ROLE: ENTRY_TYPE`
+   - Full lifecycle example showing all entry types in chronological order
+
+2. **Script Updates**: Modified both activation and completion scripts
+   - activate-ticket.sh: Changed "Activated" → "Creator: activated"
+   - complete-ticket.sh: Changed "Completed" → "Creator: completed"
+   - Both scripts now conform to standardized format
+
+3. **Design Decisions**:
+   - **Format choice**: `ROLE: ENTRY_TYPE` provides clear semantic meaning
+   - **Chronological order**: Enforced oldest-first for audit trail clarity
+   - **Validation hook**: Deferred to optional (would be Phase 2)
 
 ## Questions/Concerns
-- Should entry format be `## [timestamp] - ROLE` or `## [timestamp] - ROLE: ENTRY_TYPE`?
-- Should we enforce chronological order or allow reverse-chronological?
-- Should validation hook block or just warn?
+- ~~Should entry format be `## [timestamp] - ROLE` or `## [timestamp] - ROLE: ENTRY_TYPE`?~~
+  **RESOLVED**: Using `ROLE: ENTRY_TYPE` for semantic clarity
+
+- ~~Should we enforce chronological order or allow reverse-chronological?~~
+  **RESOLVED**: Chronological (oldest first) documented as requirement
+
+- ~~Should validation hook block or just warn?~~
+  **RESOLVED**: Validation hook marked as optional Phase 2 work
 
 ## Changes Made
 - File changes:
-- Commits:
+  - tickets/TEMPLATE.md: Added enum definitions, updated example changelog
+  - scripts/activate-ticket.sh: Line 215 - standardized changelog format
+  - scripts/complete-ticket.sh: Line 132 - standardized changelog format
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+- Commits:
+  - 66d5191: docs: add enum definitions and standardize changelog format in TEMPLATE.md
+  - c6c9776: fix: standardize changelog entry in activate-ticket.sh
+  - 3fd1561: fix: standardize changelog entry in complete-ticket.sh
+
+**Status Update**: 2025-12-11 21:15 - Changed status to `critic_review`
 
 # Critic Section
 
@@ -171,6 +201,12 @@ This makes tickets hard to audit and understand.
 - Defines enum values for roles, statuses, and entry types
 - Root cause: PR #18 had backwards, non-standard changelog entries
 
-## [2025-12-11 20:25] - Activated
+## [2025-12-11 20:25] - Creator: activated
 - Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/changelog-standardization
 - Branch: ticket/changelog-standardization
+
+## [2025-12-11 21:15] - Creator: work_done
+- Updated TEMPLATE.md with complete enum definitions
+- Standardized activate-ticket.sh and complete-ticket.sh changelog formats
+- All acceptance criteria met
+- Status changed to critic_review
