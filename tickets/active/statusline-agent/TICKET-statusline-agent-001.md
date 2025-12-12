@@ -28,13 +28,13 @@ Example output:
 ```
 
 ## Acceptance Criteria
-- [ ] Status line displays current worktree name
-- [ ] Status line displays current git branch
-- [ ] Status line displays active agent when in quality cycle
-- [ ] Agent state is written by hooks (PreToolUse/PostToolUse for Task tool)
-- [ ] Agent state clears when subagent completes
-- [ ] Works with existing workflow-guard plugin hooks
-- [ ] Graceful fallback when any component is unavailable
+- [x] Status line displays current worktree name
+- [x] Status line displays current git branch
+- [x] Status line displays active agent when in quality cycle
+- [x] Agent state is written by hooks (PreToolUse/PostToolUse for Task tool)
+- [x] Agent state clears when subagent completes
+- [x] Works with existing workflow-guard plugin hooks
+- [x] Graceful fallback when any component is unavailable
 
 # Context
 
@@ -100,18 +100,81 @@ Match these subagent_type values from Task tool:
 # Creator Section
 
 ## Implementation Notes
-[What was built, decisions made, approach taken]
+
+Successfully implemented the dynamic status line feature with the following components:
+
+### 1. Status Line Script (`~/.claude/statusline.sh`)
+Enhanced the existing status line script to:
+- Extract worktree name from git toplevel directory
+- Display worktree in yellow brackets: `[worktree-name]`
+- Read agent state from `~/.claude/current-agent`
+- Display agent with appropriate icon and green color when active
+- Format: `Model in [worktree] on branch | icon agent in directory`
+
+### 2. Agent State Tracking Hooks
+
+**PreToolUse Hook** (`hooks/track-agent-state.sh`):
+- Intercepts Task tool invocations
+- Extracts `subagent_type` parameter from JSON
+- Checks if subagent is a quality cycle agent
+- Writes agent name to `~/.claude/current-agent` if quality agent detected
+- Quality agents: code-developer, code-reviewer, code-tester, plugin-engineer, plugin-reviewer, plugin-tester, prompt-engineer, prompt-reviewer, prompt-tester, tech-writer, tech-editor, tech-publisher, Explore, Plan
+
+**PostToolUse Hook** (`hooks/clear-agent-state.sh`):
+- Intercepts Task tool completion
+- Removes `~/.claude/current-agent` file
+- Ensures agent display clears when subagent finishes
+
+### 3. Hook Registration
+Updated `hooks/hooks.json` to register:
+- PreToolUse matcher for "Task" → `track-agent-state.sh`
+- PostToolUse matcher for "Task" → `clear-agent-state.sh`
+
+### 4. Agent Icon Mapping
+Implemented icon mapping for visual distinction:
+- 🔧 Code agents (code-developer, code-reviewer, code-tester)
+- 🔌 Plugin agents (plugin-engineer, plugin-reviewer, plugin-tester)
+- 💬 Prompt agents (prompt-engineer, prompt-reviewer, prompt-tester)
+- 📝 Documentation agents (tech-writer, tech-editor, tech-publisher)
+- 🔍 Explore agent
+- 📋 Plan agent
+- ⚙️ Generic fallback for other agents
+
+### Design Decisions
+
+1. **State file location**: Used `~/.claude/current-agent` for simplicity and global accessibility
+2. **Agent tracking**: Only track quality cycle agents, ignore general-purpose subagents
+3. **Color scheme**: Yellow for worktree, magenta for branch, green for agent
+4. **Error handling**: Graceful fallbacks for missing git repo, missing state file, etc.
+5. **Hook integration**: Minimal changes to existing hooks.json, added targeted Task matchers
+
+### Testing Results
+
+All tests passed:
+- Status line displays correctly with and without agent state
+- Different agent types display with correct icons
+- State file created on Task PreToolUse for quality agents
+- State file cleared on Task PostToolUse
+- Non-quality agents don't create state file
+- Graceful handling of missing worktree/branch info
 
 ## Questions/Concerns
-- Should we show nested agents (e.g., code-developer spawns Explore)?
-- Should agent history be logged for debugging?
-- Color coding for different agent types?
+- ~~Should we show nested agents (e.g., code-developer spawns Explore)?~~ **Decision**: Only show top-level agent, nested agents would be confusing
+- ~~Should agent history be logged for debugging?~~ **Decision**: Debug logging already handled by hooks-debug.log
+- ~~Color coding for different agent types?~~ **Decision**: Implemented icon mapping instead, clearer visual distinction
 
 ## Changes Made
-- File changes:
-- Commits:
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**File changes**:
+- Modified: `~/.claude/statusline.sh` - Enhanced with worktree and agent display
+- Created: `hooks/track-agent-state.sh` - PreToolUse hook for Task tool
+- Created: `hooks/clear-agent-state.sh` - PostToolUse hook for Task tool
+- Modified: `hooks/hooks.json` - Added Task tool matchers
+
+**Commits**:
+- `45bfa77` - feat: add agent state tracking hooks for Task tool
+
+**Status Update**: 2025-12-11 18:15 - Implementation complete, ready for `critic_review`
 
 # Critic Section
 
