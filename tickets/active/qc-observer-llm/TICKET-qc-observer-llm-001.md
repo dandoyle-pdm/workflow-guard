@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: TICKET-qc-observer-hooks-001
 title: QC Observer LLM Intelligence Layer
 cycle_type: development
-status: in_progress
+status: critic_review
 created: 2025-12-11 22:28
 worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/qc-observer-llm
 ---
@@ -56,13 +56,13 @@ Transform the current observe-violation.sh "weak sauce" log appender into an LLM
 
 ## Acceptance Criteria
 
-- [ ] Schema has `resource` and `correlation` fields
-- [ ] `observe-iteration.sh` captures Loop 1 data
-- [ ] `iterations.jsonl` created at ~/.novacloud/observations/
-- [ ] `qc-observer.md` skill exists in commands/
-- [ ] Bash read patterns added to conditions.yaml (observe, not block)
-- [ ] Counter/sequence management implemented
-- [ ] Existing hooks updated to use enhanced schema
+- [x] Schema has `resource` and `correlation` fields
+- [x] `observe-iteration.sh` captures Loop 1 data
+- [x] `iterations.jsonl` created at ~/.novacloud/observations/
+- [x] `qc-observer.md` skill exists in commands/
+- [x] Bash read patterns added to conditions.yaml (observe, not block)
+- [x] Counter/sequence management implemented
+- [x] Existing hooks updated to use enhanced schema
 
 # Context
 
@@ -88,16 +88,66 @@ The observer needs to:
 # Creator Section
 
 ## Implementation Notes
-[To be filled during implementation]
+
+Implemented all four phases of the QC Observer LLM intelligence layer:
+
+**Phase 0 - Enhanced Schema:**
+- Updated observe-violation.sh header to document `resource` and `correlation` fields
+- Modified block-unreviewed-edits.sh to include resource="hook" and correlation="" in violation JSON
+- Resource field values: plugin, hook, agent, command, skill
+- Correlation field links observations: ticket-id, session-id, agent-session-id
+
+**Phase 1 - observe-iteration.sh:**
+- Created hooks/observe-iteration.sh for Loop 1 data capture
+- Stores in ~/.novacloud/observations/iterations.jsonl (separate from violations.jsonl)
+- Captures agent dispatch events: started, completed, blocked
+- Tracks cycle type, agent name, sequence number, and findings
+- Fail-safe design prevents breaking agent dispatch on logging errors
+
+**Phase 2 - qc-observer.md Skill:**
+- Created commands/qc-observer.md as injectable skill
+- Implements Omnyx dual consciousness overlay pattern
+- Documents observer protocol: Watch, Comment, Identify, Document
+- Environment variable filtering: OBSERVER_RESOURCES, OBSERVER_KINDS
+- Transparent (visible to user) and non-interfering design
+
+**Phase 3 - Bash File Read Patterns:**
+- Added conditions to engine/conditions.yaml:
+  - is-cat-command, is-head-command, is-tail-command
+  - is-less-command, is-grep-command
+  - is-bash-file-read (compound condition)
+- Enables observation of file reads (not blocking)
+- Closes "bash cat" bypass gap for observability
+
+**Phase 4 - Counter Management:**
+- Implemented get_next_sequence() in both observe-violation.sh and observe-iteration.sh
+- File-based counter at ~/.novacloud/observations/.counter
+- Atomic locking using mkdir (5 second timeout, 0.1s retry)
+- Sequence injected into JSON using jq before storage
+- Graceful degradation on failure (proceeds without sequence)
+- Unified counter across all observation types
 
 ## Questions/Concerns
-[To be filled during implementation]
+
+None - all acceptance criteria met.
 
 ## Changes Made
-- File changes:
-- Commits:
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+File changes:
+- hooks/observe-violation.sh: Enhanced schema docs, counter management
+- hooks/block-unreviewed-edits.sh: Added resource and correlation fields
+- hooks/observe-iteration.sh: NEW - Loop 1 iteration capture with counter
+- commands/qc-observer.md: NEW - Observer skill with dual consciousness protocol
+- engine/conditions.yaml: Added bash-file-read patterns
+
+Commits:
+1. 7cdedb3 - feat(observer): Phase 0 - Enhanced schema with resource and correlation fields
+2. b7f1d66 - feat(observer): Phase 1 - observe-iteration.sh for Loop 1 data capture
+3. 2a48654 - feat(observer): Phase 2 - qc-observer.md skill with observer protocol
+4. 7e5a4e1 - feat(observer): Phase 3 - Bash file read patterns for observation
+5. 234f2d2 - feat(observer): Phase 4 - Counter management for observation sequencing
+
+**Status Update**: 2025-12-11 23:15 - Changed status to `critic_review`
 
 # Critic Section
 
