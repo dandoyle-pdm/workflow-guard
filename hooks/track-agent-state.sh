@@ -116,7 +116,5 @@ main() {
     exit 0
 }
 
-# Execute main with error handling
-if ! main "$@"; then
-    exit $?
-fi
+# Execute main
+main "$@"
