@@ -212,7 +212,7 @@ phase2_activate() {
         sed -i "s|^worktree_path:.*|worktree_path: ${safe_worktree_path}|" "$active_ticket"
         sed -i "s/^status:.*/status: in_progress/" "$active_ticket"
 
-        printf '\n## [%s] - Activated\n- Worktree: %s\n- Branch: %s\n' \
+        printf '\n## [%s] - Creator: activated\n- Worktree: %s\n- Branch: %s\n' \
             "$(date '+%Y-%m-%d %H:%M')" "$worktree_path" "$branch_name" >> "$active_ticket"
 
         git add tickets/
