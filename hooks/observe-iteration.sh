@@ -10,14 +10,14 @@
 #   "timestamp": "ISO-8601",
 #   "resource": "agent",
 #   "correlation": "ticket-id or session-id",
-#   "sequence": 1,
 #   "iteration": {
 #     "loop": 1,
 #     "cycle": "plugin|coding|prompt|tech",
 #     "agent": "plugin-engineer|code-developer|etc",
 #     "status": "started|completed|blocked",
 #     "findings": []
-#   }
+#   },
+#   "sequence": 1
 # }
 #
 # Loop values:
