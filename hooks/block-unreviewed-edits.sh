@@ -503,17 +503,24 @@ main() {
 
     # Log violation for QC Observer (fail-safe - errors won't break blocking)
     # Use jq for safe JSON construction to prevent injection attacks
+    # Extract session_id from input JSON for correlation tracking
+    local session_id
+    session_id=$(printf '%s\n' "${json_input}" | jq -r '.session_id // ""' 2>/dev/null || echo "")
+
     local violation_json
     violation_json=$(jq -n \
         --arg ts "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
         --arg tool "${tool_name}" \
         --arg file "${file_path}" \
+        --arg sid "${session_id}" \
         '{
             "type": "workflow-guard",
             "timestamp": $ts,
             "observation_type": "blocking",
+            "resource": "hook",
+            "correlation": $sid,
             "cycle": "inferred",
-            "session_id": "",
+            "session_id": $sid,
             "agent": null,
             "tool": $tool,
             "file": $file,

@@ -112,6 +112,50 @@ conditions:
     description: "Matches any Bash file write pattern"
 
   # ===========================================================================
+  # BASH READ PATTERNS (for observation, not blocking)
+  # ===========================================================================
+
+  is-cat-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\bcat\s+'
+    description: "Detects cat command (file reading)"
+
+  is-head-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\bhead\s+'
+    description: "Detects head command (file reading)"
+
+  is-tail-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\btail\s+'
+    description: "Detects tail command (file reading)"
+
+  is-less-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\bless\s+'
+    description: "Detects less command (file reading)"
+
+  is-grep-command:
+    type: regex
+    field: tool_input.command
+    pattern: '\bgrep\s+'
+    description: "Detects grep command (file searching)"
+
+  is-bash-file-read:
+    type: compound
+    any:
+      - ref: is-cat-command
+      - ref: is-head-command
+      - ref: is-tail-command
+      - ref: is-less-command
+      - ref: is-grep-command
+    description: "Matches any Bash file read pattern (observe only, not blocking)"
+
+  # ===========================================================================
   # FILE PATH PATTERNS
   # ===========================================================================
 
