@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Dynamic status line showing worktree, branch, and agent
 cycle_type: development
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-11 17:47
 created: 2025-12-11 14:30
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/statusline-agent
 ---
 
 # Requirements
@@ -156,3 +156,7 @@ Match these subagent_type values from Task tool:
 ## [2025-12-11 14:30] - Coordinator
 - Ticket created from discussion about dynamic status line
 - Technical design included based on conversation
+
+## [2025-12-11 17:47] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/statusline-agent
+- Branch: ticket/statusline-agent
