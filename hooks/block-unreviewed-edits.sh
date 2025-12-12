@@ -512,6 +512,8 @@ main() {
             "type": "workflow-guard",
             "timestamp": $ts,
             "observation_type": "blocking",
+            "resource": "hook",
+            "correlation": "",
             "cycle": "inferred",
             "session_id": "",
             "agent": null,

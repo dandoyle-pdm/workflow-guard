@@ -9,6 +9,8 @@
 #   "type": "workflow-guard|claude-mem|session-lifecycle|mcp-health|agent-dispatch",
 #   "timestamp": "ISO-8601",
 #   "observation_type": "blocking",
+#   "resource": "plugin|hook|agent|command|skill",
+#   "correlation": "ticket-id or session-id",
 #   "cycle": "coding|plugin|prompt|tech|inferred",
 #   "session_id": "session-id",
 #   "agent": "agent-name or null",
@@ -26,6 +28,19 @@
 #   session-lifecycle - Claude Code core (future - session events)
 #   mcp-health        - MCP servers (future - server availability)
 #   agent-dispatch    - Task tool (future - subagent tracking)
+#
+# Resource values:
+#   plugin   - Plugin resources (plugin.json, hooks, commands)
+#   hook     - Bash hooks (PreToolUse, PostToolUse)
+#   agent    - Quality agents (code-developer, plugin-engineer, etc.)
+#   command  - Slash commands and skills
+#   skill    - Injectable skills for prompt context
+#
+# Correlation field:
+#   Links related observations together using common identifiers:
+#   - ticket-id: For observations related to specific tickets
+#   - session-id: For observations within a Claude Code session
+#   - agent-session-id: For observations within a quality agent invocation
 
 set -euo pipefail
 
