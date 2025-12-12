@@ -154,21 +154,62 @@ Commits:
 ## Audit Findings
 
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description and fix required
+- [x] `hooks/observe-violation.sh:128-134` - **Empty input validation bypass**: The script logs "Violation logged successfully" even when empty JSON is received (line 166). While it returns early (line 133), the debug log message at line 166 is misleading. The script correctly handles the case by exiting early, but the final debug message is confusing.
+- [x] `hooks/observe-violation.sh:128-165` - **Invalid JSON written to violations.jsonl**: When invalid JSON is provided (e.g., "invalid json{{{"), the script writes it directly to violations.jsonl without validation. The jq injection (lines 150-158) fails silently and falls back to original JSON, but never validates if the input was valid JSON in the first place. This corrupts the JSONL file.
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description and fix required
+- [x] `hooks/observe-violation.sh:59-119` & `hooks/observe-iteration.sh:56-116` - **Duplicated counter logic**: The `get_next_sequence()` function is identical across both files (61 lines of code). This violates DRY principle and creates maintenance burden. Consider extracting to a shared library file (e.g., `hooks/lib/counter.sh`).
+- [x] `commands/qc-observer.md:1-245` - **Skill not registered**: The qc-observer.md file exists but is not referenced in any plugin configuration. Skills need to be activated/injected via plugin.json or another mechanism. The skill documentation is excellent but currently has no activation path.
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion for improvement
+- [x] `hooks/observe-iteration.sh:10` - **Schema conflict**: The JSON schema defines `"sequence": 1` inside the `iteration` object (line 18), but `get_next_sequence()` injects `sequence` at the root level (line 149). This creates duplicate sequence fields at different levels. Should clarify which is the canonical location.
+- [x] `engine/conditions.yaml:148-156` - **Observation vs blocking unclear**: The `is-bash-file-read` condition documentation states "observe only, not blocking" (line 156), but there's no hook implementation using this condition yet. This is Phase 3 foundation work, but without a consuming hook, it's untestable.
+- [x] `hooks/block-unreviewed-edits.sh:516` - **Empty correlation field**: The violation JSON sets `"correlation": ""` (empty string) instead of using a meaningful value like ticket-id or session-id from context. This reduces the value of correlation tracking.
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+NEEDS_CHANGES
 
 ## Rationale
-[Why this decision]
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+The implementation demonstrates strong architectural thinking and follows existing patterns well:
+
+**Strengths:**
+1. Fail-safe design throughout (errors don't break callers)
+2. Proper error handling with `set -euo pipefail`
+3. Atomic file locking for counter management
+4. Comprehensive documentation in qc-observer.md
+5. Valid YAML and bash syntax across all files
+6. Follows established debug logging patterns
+7. Schema enhancements (resource, correlation) are well-documented
+
+**Critical defects requiring fixes:**
+1. Invalid JSON corruption of violations.jsonl (data integrity issue)
+2. Empty input validation creates misleading logs (confusing debugging)
+
+**High-priority improvements:**
+1. DRY violation with counter duplication (maintenance burden)
+2. Skill registration missing (feature incomplete)
+
+**Medium-priority improvements:**
+1. Schema clarity (sequence field location)
+2. Correlation field should use available context
+3. Observation conditions need consuming implementation
+
+The CRITICAL issues around JSON validation must be resolved before this can be approved. The script should:
+- Validate JSON before writing to file
+- Only log success when data was actually written
+- Either validate with jq or reject invalid input
+
+The HIGH issue around counter duplication is a quality concern but not a blocker. However, the skill registration gap means Phase 2 is incomplete.
+
+**Recommended fixes:**
+1. Add JSON validation before writing to violations.jsonl/iterations.jsonl
+2. Extract counter logic to shared library (hooks/lib/counter.sh)
+3. Document or implement skill activation mechanism
+4. Populate correlation field from available context (session_id, etc.)
+5. Clarify sequence field canonical location in schema docs
+
+**Status Update**: 2025-12-11 21:20 - Status remains `critic_review` pending CRITICAL fixes
 
 # Expediter Section
 
