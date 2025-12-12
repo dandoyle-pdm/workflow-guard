@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Add PostToolUse hook for subagent activity visibility
 cycle_type: development
-status: in_progress
+status: approved
 claimed_by: ddoyle
 claimed_at: 2025-12-11 22:34
 created: 2025-12-11 12:00
@@ -25,12 +25,12 @@ Create a PostToolUse hook that logs subagent activity to provide visibility into
 3. Hook should log Task tool invocations to `~/.claude/logs/subagent-activity.log`
 
 ## Acceptance Criteria
-- [ ] PostToolUse hook fires after Task tool completes
-- [ ] Log file created at `~/.claude/logs/subagent-activity.log`
-- [ ] Log entries include: timestamp, session_id, subagent_type, description
-- [ ] Hook is non-blocking (exit 0 always)
-- [ ] Hook registered in hooks.json under PostToolUse
-- [ ] Hook doesn't block or slow down Task execution
+- [x] PostToolUse hook fires after Task tool completes
+- [x] Log file created at `~/.claude/logs/subagent-activity.log`
+- [x] Log entries include: timestamp, session_id, subagent_type, description
+- [x] Hook is non-blocking (exit 0 always)
+- [x] Hook registered in hooks.json under PostToolUse
+- [x] Hook doesn't block or slow down Task execution
 
 # Context
 
@@ -123,54 +123,70 @@ The Explore agent found:
 # Creator Section
 
 ## Implementation Notes
-[To be filled by plugin-engineer]
+- Created `hooks/log-subagent-activity.sh` (69 lines) following `clear-agent-state.sh` pattern
+- Uses jq with sed fallback for JSON parsing
+- Non-blocking (always exit 0)
+- Logs to `~/.claude/logs/subagent-activity.log`
+- Format: `[timestamp] SESSION:{id} AGENT:{type} TASK:{description} STATUS:completed`
 
 ## Questions/Concerns
-[To be filled by plugin-engineer]
+None - straightforward implementation following established patterns
 
 ## Changes Made
 - File changes:
+  - `hooks/log-subagent-activity.sh` - New PostToolUse hook script
+  - `hooks/hooks.json` - Added hook registration to PostToolUse Task matcher
 - Commits:
+  - `2277067` - feat: add subagent activity logging hook
 
-**Status Update**: [Date/time] - Changed status to `critic_review`
+**Status Update**: 2025-12-12 00:20 - Changed status to `critic_review`
 
 # Critic Section
 
 ## Audit Findings
 
 ### CRITICAL Issues
-- [ ] `file:line` - Issue description and fix required
+None found
 
 ### HIGH Issues
-- [ ] `file:line` - Issue description and fix required
+None found
 
 ### MEDIUM Issues
-- [ ] `file:line` - Suggestion for improvement
+None found
 
 ## Approval Decision
-[APPROVED | NEEDS_CHANGES]
+APPROVED
 
 ## Rationale
-[Why this decision]
+- All acceptance criteria met
+- Security best practices followed (printf, proper quoting, no command injection)
+- Consistent with established codebase patterns (`clear-agent-state.sh`, `detect-protected-commits.sh`)
+- Functional testing confirms correct behavior
+- No issues found during review
 
-**Status Update**: [Date/time] - Changed status to `expediter_review`
+**Status Update**: 2025-12-12 00:22 - Changed status to `expediter_review`
 
 # Expediter Section
 
 ## Validation Results
-- Automated tests: [PASS/FAIL details]
-- Linting: [PASS/FAIL]
-- Type checking: [PASS/FAIL]
-- Security scans: [PASS/FAIL]
-- Build: [PASS/FAIL]
+- Test 1 (Hook Registration): PASS
+- Test 2 (Log File Creation): PASS
+- Test 3 (Log Format Validation): PASS
+- Test 4 (Non-Blocking Behavior): PASS
+- Test 5 (Multiple Sequential Invocations): PASS
+- Test 6 (jq Fallback): PASS
+- Shellcheck: PASS - No issues detected
+- Script Permissions: PASS - Executable (755)
 
 ## Quality Gate Decision
-[APPROVE | CREATE_REWORK_TICKET | ESCALATE]
+APPROVE
 
 ## Next Steps
-[If approved: integration steps | If rework: what needs fixing | If escalate: why]
+- Create PR for merge to main
+- After merge, restart Claude Code to load new hook
+- Verify logging works in live session
 
-**Status Update**: [Date/time] - Changed status to `approved` or created `TICKET-{session-id}-{next-seq}`
+**Status Update**: 2025-12-12 00:24 - Changed status to `approved`
 
 # Changelog
 
@@ -183,3 +199,17 @@ The Explore agent found:
 ## [2025-12-11 22:34] - Creator: activated
 - Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/subagent-visibility
 - Branch: ticket/subagent-visibility
+
+## [2025-12-12 00:20] - Creator: implemented
+- Created `hooks/log-subagent-activity.sh`
+- Registered hook in `hooks/hooks.json`
+- Commit: 2277067
+
+## [2025-12-12 00:22] - Critic: approved
+- All security checks passed
+- Code follows established patterns
+- No issues found
+
+## [2025-12-12 00:24] - Expediter: approved
+- All 6 tests passed
+- Ready for PR and merge
