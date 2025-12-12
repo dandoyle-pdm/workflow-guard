@@ -129,7 +129,7 @@ complete_ticket() {
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M')
     log_info "Adding changelog entry"
-    printf '\n## [%s] - Completed\n- Status changed to approved\n- Ready for PR creation\n' \
+    printf '\n## [%s] - Creator: completed\n- Status changed to approved\n- Ready for PR creation\n' \
         "$timestamp" >> "$ticket_path"
 
     # Move ticket to completed/
