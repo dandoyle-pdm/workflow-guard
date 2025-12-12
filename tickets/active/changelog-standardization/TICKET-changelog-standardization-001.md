@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-changelog-standardization
+ticket_id: TICKET-changelog-standardization-001
 session_id: changelog-standardization
-sequence: null
+sequence: 001
 parent_ticket: null
 title: Standardize changelog entries with enum-like role and status values
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-11 20:25
 created: 2025-12-10 19:45
 worktree_path: null
 ---
