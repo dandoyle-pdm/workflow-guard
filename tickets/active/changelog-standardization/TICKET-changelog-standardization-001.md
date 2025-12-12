@@ -6,11 +6,11 @@ sequence: 001
 parent_ticket: null
 title: Standardize changelog entries with enum-like role and status values
 cycle_type: development
-status: claimed
+status: in_progress
 claimed_by: ddoyle
 claimed_at: 2025-12-11 20:25
 created: 2025-12-10 19:45
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/changelog-standardization
 ---
 
 # Requirements
@@ -170,3 +170,7 @@ This makes tickets hard to audit and understand.
 - Ticket created to standardize changelog entries
 - Defines enum values for roles, statuses, and entry types
 - Root cause: PR #18 had backwards, non-standard changelog entries
+
+## [2025-12-11 20:25] - Activated
+- Worktree: /home/ddoyle/.novacloud/worktrees/workflow-guard/changelog-standardization
+- Branch: ticket/changelog-standardization
