@@ -2,13 +2,13 @@
 # Metadata
 ticket_id: TICKET-qc-observer-llm
 session_id: qc-observer-llm
-sequence: {assigned at activation}
+sequence: 001
 parent_ticket: TICKET-qc-observer-hooks-001
 title: QC Observer LLM Intelligence Layer
 cycle_type: development
-status: open
+status: in_progress
 created: 2025-12-11 22:28
-worktree_path: null
+worktree_path: /home/ddoyle/.novacloud/worktrees/workflow-guard/qc-observer-llm
 ---
 
 # Requirements
