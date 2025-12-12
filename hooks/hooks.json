@@ -119,6 +119,11 @@
           "type": "command",
           "command": "hooks/clear-agent-state.sh",
           "timeout": 5
+        },
+        {
+          "type": "command",
+          "command": "hooks/log-subagent-activity.sh",
+          "timeout": 5
         }
       ]
     }
