@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-subagent-visibility
+ticket_id: TICKET-subagent-visibility-001
 session_id: subagent-visibility
-sequence: null
+sequence: 001
 parent_ticket: null
 title: Add PostToolUse hook for subagent activity visibility
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-11 22:34
 created: 2025-12-11 12:00
 worktree_path: null
 ---
