@@ -1,12 +1,14 @@
 ---
 # Metadata
-ticket_id: TICKET-statusline-agent
+ticket_id: TICKET-statusline-agent-001
 session_id: statusline-agent
-sequence: {assigned at activation}
+sequence: 001
 parent_ticket: null
 title: Dynamic status line showing worktree, branch, and agent
 cycle_type: development
-status: open
+status: claimed
+claimed_by: ddoyle
+claimed_at: 2025-12-11 17:47
 created: 2025-12-11 14:30
 worktree_path: null
 ---
