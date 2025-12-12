@@ -81,6 +81,16 @@
       ]
     },
     {
+      "matcher": "Task",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/track-agent-state.sh",
+          "timeout": 5
+        }
+      ]
+    },
+    {
       "matcher": "*",
       "hooks": [
         {
@@ -99,6 +109,16 @@
           "type": "command",
           "command": "hooks/detect-protected-commits.sh",
           "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "Task",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "hooks/clear-agent-state.sh",
+          "timeout": 5
         }
       ]
     }
