@@ -6,7 +6,7 @@ sequence: 001
 parent_ticket: null
 title: Add PostToolUse hook for subagent activity visibility
 cycle_type: development
-status: approved
+status: completed
 claimed_by: ddoyle
 claimed_at: 2025-12-11 22:34
 created: 2025-12-11 12:00
@@ -213,3 +213,9 @@ APPROVE
 ## [2025-12-12 00:24] - Expediter: approved
 - All 6 tests passed
 - Ready for PR and merge
+
+## [2025-12-13 09:22] - Creator: completed
+- PR #24 merged
+- Ticket moved to completed/
+- Branch deleted
+- Worktree removed
